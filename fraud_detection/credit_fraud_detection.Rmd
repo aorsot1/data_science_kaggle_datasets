@@ -1,0 +1,159 @@
+---
+title: "fraud_detection"
+author: "Akoua Orsot"
+date: "2/8/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+In this notebook, we will attempt to build an algorithm able to detect a fraudulent transaction using a training dataset. We will exlain the thinking process at every step usine LIME (Local Interpretable Model-agnostic Explanations) principles making it accessible and user-friendly.
+
+# Table of Contents 
+
+1\. Environment set-up
+
+\* Importing Libraries
+
+\* Loading the data
+
+2\. Initial Diagnostics
+
+\* Glimpse
+
+\* Descriptive Statitics
+
+\* Target Variable Analysis
+
+\* Predictors Analysis
+
+3\. Data Cleaning
+
+\* Missing Values
+
+\* Outliers
+
+\* Duplicate Observations
+
+4\. Correlation Analysis
+
+\* Correlation Matrix
+
+\* Strongest relationship
+
+5\. Inquiry Exploration
+
+\* How does Amount's distribution behaves across classes?
+
+\* Are there any noteworthy point in time where fraud occured?
+
+6\. Class Imbalance
+
+\* SMOTE - Synthetic Minority Oversampling Technique
+
+\* Near-Miss Algorithm
+
+\* Combined Random Sampler
+
+7\. Dimensionality Reduction
+
+\* PCA - Principal Component Analysis
+
+\* SVD - Singular Value Decomposition
+
+\* LDA - Linear Discriminant Analysis
+
+8\. Machine Learning - Simple Models
+
+\* Logistic Regression
+
+\* k-Nearest Neighbors
+
+\* Decision Tree
+
+\* Stochastic Gradient Descent
+
+9\. Machine Learning - Ensemble Methods
+
+\* Random Forest
+
+\* Stochastic Gradient Boosting
+
+\* StackingClassifier
+
+10\. Model Performance Evalution
+
+\* Top 3 models
+
+\* Cross-Validation
+
+\* Conclusion
+
+##  1. Environment Set-up
+
+### a) Importing libraries
+
+```{r}
+
+library(tidyverse)
+library(ggplot2)
+library(e1071)
+library(dplyr)
+```
+
+### b) Loading dataset
+
+```{r}
+df <- read_csv(file = 'C:/Users/Akoua Orsot/Desktop/ds_projects_data/creditcard.csv')
+head(df)
+```
+
+## 2. Initial Diagnostics
+
+### a) Glimpse of the data
+
+```{r}
+df %>% str()
+```
+
+### b) Descriptive Statistics
+
+```{r}
+df %>% summary()
+```
+
+**Takeaway**
+
+It confirms the note in the project description; indeed, we have a considerable class imbalance with the target variable. It stays consistent with the fact that most fraudulent activities are much less frequenct than non-fraudulent. We shall take note of it before proceeding in order to avoid any overfitting issue when fitting the machine learning models.
+
+### c) Target Variable Analysis
+
+```{r}
+  df %>% group_by(Class) %>%
+  summarise(cnt = n()) %>%
+  mutate(freq = round(cnt / sum(cnt), 5)) %>% 
+  arrange(desc(freq))
+```
+
+**Note**
+
+For privacy purposes, we did not have any information on the numerical predictors as those were transformed with PCA except Amount & Time. In that regard, Amount presented itself as potentially most informative for the feature variable analysis.
+
+With an onslaught of outliers, we had to transform it using log scale to obtain a better view of the variable's distribution
+
+```{r}
+df$Amount %>% summary()
+```
+
+```{r}
+df %>% ggplot(aes(Amount)) +
+  geom_histogram(bins=35) +
+  scale_x_log10() +
+  labs(
+  x = "Dollar Amount (Log Scale)",
+  y = "Frequency (Count)",
+  title= "Distribution of Transaction Amount (log scaled)"
+ )
+```
