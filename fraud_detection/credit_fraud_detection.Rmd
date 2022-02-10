@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/8/2022"
+date: "2/9/2022"
 output:
   github_document:
     toc: true
@@ -36,7 +36,7 @@ head(df)
 ## 2. Initial Diagnostics
 
 ```{r}
-## a) Glimpse of the data
+## Glimpse of the data
 df %>% str()
 ```
 
@@ -58,6 +58,7 @@ df %>% group_by(Class) %>%
 **Note:** We did not have any information on the numerical predictors for privacy, given their transformation and standardization, excluding Amount & Time. In that regard, Amount presented itself as potentially most informative for the feature variable analysis. To better understand the variable's distribution, we had to transform it using a log scale.
 
 ```{r}
+## Target Variable Analysis
 df$Amount %>% summary()
 
 df %>% ggplot(aes(Amount)) +
@@ -109,10 +110,6 @@ df$Amount <- scale(df$Amount)
 ```
 
 ## 4. Correlation Analysis
-
-```{r}
-df
-```
 
 ```{r}
 df_cor <- cor(df)
