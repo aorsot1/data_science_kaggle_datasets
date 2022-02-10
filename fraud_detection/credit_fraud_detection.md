@@ -5,26 +5,23 @@ Akoua Orsot
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
-        -   [a) Importing libraries](#a-importing-libraries)
-        -   [b) Loading dataset](#b-loading-dataset)
     -   [2. Initial Diagnostics](#2-initial-diagnostics)
-        -   [a) Glimpse of the data](#a-glimpse-of-the-data)
-        -   [b) Descriptive Statistics](#b-descriptive-statistics)
-        -   [c) Target Variable Analysis](#c-target-variable-analysis)
+    -   [3. Data Cleaning](#3-data-cleaning)
+    -   [4. Correlation Analysis](#4-correlation-analysis)
+    -   [5. Inquiry Exploration](#5-inquiry-exploration)
 
 # Fraud Detection
 
-In this notebook, we will attempt to build an algorithm able to detect a
-fraudulent transaction using a training dataset. We will exlain the
-thinking process at every step usine LIME (Local Interpretable
+This notebook will attempt to build a predictive algorithm to detect a
+fraudulent transaction using a training dataset. We will explain the
+thinking process at every step using LIME (Local Interpretable
 Model-agnostic Explanations) principles making it accessible and
 user-friendly.
 
 ## 1. Environment Set-up
 
-### a) Importing libraries
-
 ``` r
+## Importing libraries
 library(tidyverse)
 ```
 
@@ -43,11 +40,16 @@ library(tidyverse)
 library(ggplot2)
 library(e1071)
 library(dplyr)
+# install.packages("corrplot")
+library(corrplot)
 ```
 
-### b) Loading dataset
+    ## Warning: package 'corrplot' was built under R version 4.1.2
+
+    ## corrplot 0.92 loaded
 
 ``` r
+## Loading dataset
 df <- read_csv(file = 'C:/Users/Akoua Orsot/Desktop/ds_projects_data/creditcard.csv')
 ```
 
@@ -81,9 +83,8 @@ head(df)
 
 ## 2. Initial Diagnostics
 
-### a) Glimpse of the data
-
 ``` r
+## a) Glimpse of the data
 df %>% str()
 ```
 
@@ -155,9 +156,8 @@ df %>% str()
     ##   .. )
     ##  - attr(*, "problems")=<externalptr>
 
-### b) Descriptive Statistics
-
 ``` r
+## Descriptive Statistics
 df %>% summary()
 ```
 
@@ -225,19 +225,16 @@ df %>% summary()
     ##  3rd Qu.:  0.07828   3rd Qu.:   77.17   3rd Qu.:0.000000  
     ##  Max.   : 33.84781   Max.   :25691.16   Max.   :1.000000
 
-**Takeaway**
-
-It confirms the note in the project description; indeed, we have a
-considerable class imbalance with the target variable. It stays
-consistent with the fact that most fraudulent activities are much less
-frequenct than non-fraudulent. We shall take note of it before
-proceeding in order to avoid any overfitting issue when fitting the
-machine learning models.
-
-### c) Target Variable Analysis
+**Takeaway:** The following percentage breakdown confirms the note in
+the project description; indeed, we have a considerable class imbalance
+with the target variable. It stays consistent that most fraudulent
+activities are much less frequent than non-fraudulent. Before
+proceeding, we shall note it to avoid any overfitting issues when
+fitting the machine learning models.
 
 ``` r
-  df %>% group_by(Class) %>%
+## Target Variable Analysis
+df %>% group_by(Class) %>%
   summarise(cnt = n()) %>%
   mutate(freq = round(cnt / sum(cnt), 5)) %>% 
   arrange(desc(freq))
@@ -249,15 +246,11 @@ machine learning models.
     ## 1     0 284315 0.998  
     ## 2     1    492 0.00173
 
-**Note**
-
-For privacy purposes, we did not have any information on the numerical
-predictors as those were transformed with PCA except Amount & Time. In
-that regard, Amount presented itself as potentially most informative for
-the feature variable analysis.
-
-With an onslaught of outliers, we had to transform it using log scale to
-obtain a better view of the variable’s distribution
+**Note:** We did not have any information on the numerical predictors
+for privacy, given their transformation and standardization, excluding
+Amount & Time. In that regard, Amount presented itself as potentially
+most informative for the feature variable analysis. To better understand
+the variable’s distribution, we had to transform it using a log scale.
 
 ``` r
 df$Amount %>% summary()
@@ -281,4 +274,120 @@ df %>% ggplot(aes(Amount)) +
 
     ## Warning: Removed 1825 rows containing non-finite values (stat_bin).
 
-![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+
+## 3. Data Cleaning
+
+``` r
+## Missing Values
+df %>% is.na() %>% sum()
+```
+
+    ## [1] 0
+
+**Takeaway:** As the count shows, we have no missing values given the
+pre-processing done prior.
+
+**Note**: With most predictors transformed, there will be little chance
+for any outliers in the data points for V1, V2, …, V28. So, we will only
+examine Amount as the only meaningful numeric feature.
+
+``` r
+df %>% ggplot(aes(x=Amount)) +
+  geom_boxplot() +
+  labs(
+  x = "Amount ($)",
+  title= "Distribution of Transaction Amount"
+ )
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+
+**Takeaway:** From the boxplot below, we can observe a non-negligible
+number of outliers on the upper end of the distribution. It would denote
+transactions with high amounts in the order of thousands of dollars. We
+would assess the effect of this skewed distribution when building the
+predictive models in terms of feature transformation or selecting models
+robust to such feature types.
+
+``` r
+df %>% duplicated() %>% sum()
+```
+
+    ## [1] 1081
+
+**Takeaway:** A quick check reveals 1081 duplicate rows, so we proceed
+in removing them from the dataset.
+
+``` r
+df <- df[!duplicated(df), ]
+```
+
+**Definition:** Feature Engineering
+
+``` r
+df$Amount <- scale(df$Amount)
+```
+
+## 4. Correlation Analysis
+
+``` r
+df
+```
+
+    ## # A tibble: 283,726 x 31
+    ##     Time     V1      V2      V3     V4      V5      V6       V7      V8     V9
+    ##    <dbl>  <dbl>   <dbl>   <dbl>  <dbl>   <dbl>   <dbl>    <dbl>   <dbl>  <dbl>
+    ##  1     0 -1.36  -0.0728  2.54    1.38  -0.338   0.462   0.240    0.0987  0.364
+    ##  2     0  1.19   0.266   0.166   0.448  0.0600 -0.0824 -0.0788   0.0851 -0.255
+    ##  3     1 -1.36  -1.34    1.77    0.380 -0.503   1.80    0.791    0.248  -1.51 
+    ##  4     1 -0.966 -0.185   1.79   -0.863 -0.0103  1.25    0.238    0.377  -1.39 
+    ##  5     2 -1.16   0.878   1.55    0.403 -0.407   0.0959  0.593   -0.271   0.818
+    ##  6     2 -0.426  0.961   1.14   -0.168  0.421  -0.0297  0.476    0.260  -0.569
+    ##  7     4  1.23   0.141   0.0454  1.20   0.192   0.273  -0.00516  0.0812  0.465
+    ##  8     7 -0.644  1.42    1.07   -0.492  0.949   0.428   1.12    -3.81    0.615
+    ##  9     7 -0.894  0.286  -0.113  -0.272  2.67    3.72    0.370    0.851  -0.392
+    ## 10     9 -0.338  1.12    1.04   -0.222  0.499  -0.247   0.652    0.0695 -0.737
+    ## # ... with 283,716 more rows, and 21 more variables: V10 <dbl>, V11 <dbl>,
+    ## #   V12 <dbl>, V13 <dbl>, V14 <dbl>, V15 <dbl>, V16 <dbl>, V17 <dbl>,
+    ## #   V18 <dbl>, V19 <dbl>, V20 <dbl>, V21 <dbl>, V22 <dbl>, V23 <dbl>,
+    ## #   V24 <dbl>, V25 <dbl>, V26 <dbl>, V27 <dbl>, V28 <dbl>, Amount <dbl[,1]>,
+    ## #   Class <dbl>
+
+``` r
+df_cor <- cor(df)
+corrplot(df_cor, method = 'color')
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
+**Takeaway:** From the correlation matrix plotted, we can observe very
+few correlated variables as we would expect after the feature
+transformation. The two meaningful features, are Time and Amount, have
+some relative correlation with some variables with coefficients
+approximating 0.4. With such low values, it would be pretty challenging
+to imply a correlation between any of them with any certainty. It also
+indicates that there would be a very low incidence of any colinearity
+within our data
+
+**Note:** The code below filters those pairs with correlation
+coefficients above 0.5 as a threshold. As noted above, those values give
+very little to no confidence in any solid correlated relationship
+between variables as few crossing the 0.5 mark.
+
+``` r
+df_cor <- as.data.frame(df_cor)
+df_cor[(abs(df_cor) >= 0.5) & (abs(df_cor) !=1)]
+```
+
+    ## [1] -0.533428 -0.533428
+
+## 5. Inquiry Exploration
+
+**Note:** In an attempt to answer the first question, we first split our
+dataset by class types; in other words, fraudulent and non-fraudulent
+transactions. We then plot the histogram side by side to observe any
+unusual behavior. In doing so, the non-fraud transactions were heavily
+right-skewed, making it quite challenging to compare the plots. To solve
+this issue, we used a logarithmic transformation, making it easier to
+see and thus, evaluate any similarities and differences.
