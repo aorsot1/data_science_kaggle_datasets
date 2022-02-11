@@ -1,7 +1,7 @@
 fraud_detection
 ================
 Akoua Orsot
-2/9/2022
+2/11/2022
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -9,6 +9,7 @@ Akoua Orsot
     -   [3. Data Cleaning](#3-data-cleaning)
     -   [4. Correlation Analysis](#4-correlation-analysis)
     -   [5. Inquiry Exploration](#5-inquiry-exploration)
+    -   [6. Class Imbalance](#6-class-imbalance)
 
 # Fraud Detection
 
@@ -22,15 +23,30 @@ user-friendly.
 
 ``` r
 ## Importing libraries
+library(dplyr)
+```
+
+    ## 
+    ## Attaching package: 'dplyr'
+
+    ## The following objects are masked from 'package:stats':
+    ## 
+    ##     filter, lag
+
+    ## The following objects are masked from 'package:base':
+    ## 
+    ##     intersect, setdiff, setequal, union
+
+``` r
 library(tidyverse)
 ```
 
     ## -- Attaching packages --------------------------------------- tidyverse 1.3.1 --
 
     ## v ggplot2 3.3.5     v purrr   0.3.4
-    ## v tibble  3.1.5     v dplyr   1.0.7
-    ## v tidyr   1.1.4     v stringr 1.4.0
-    ## v readr   2.0.2     v forcats 0.5.1
+    ## v tibble  3.1.5     v stringr 1.4.0
+    ## v tidyr   1.1.4     v forcats 0.5.1
+    ## v readr   2.0.2
 
     ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
@@ -39,7 +55,19 @@ library(tidyverse)
 ``` r
 library(ggplot2)
 library(e1071)
-library(dplyr)
+library(caret)
+```
+
+    ## Loading required package: lattice
+
+    ## 
+    ## Attaching package: 'caret'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     lift
+
+``` r
 # install.packages("corrplot")
 library(corrplot)
 ```
@@ -47,6 +75,10 @@ library(corrplot)
     ## Warning: package 'corrplot' was built under R version 4.1.2
 
     ## corrplot 0.92 loaded
+
+``` r
+# install.packages("DMwR")
+```
 
 ``` r
 ## Loading dataset
@@ -369,3 +401,87 @@ unusual behavior. In doing so, the non-fraud transactions were heavily
 right-skewed, making it quite challenging to compare the plots. To solve
 this issue, we used a logarithmic transformation, making it easier to
 see and thus, evaluate any similarities and differences.
+
+``` r
+# How does Amount's distribution behaves across classes?
+
+# Splitting data by fraud class
+df_no_fraud <- df %>% filter(Class == 0)
+df_fraud <- df %>% filter(Class == 1)
+
+# Histogram for Amount Distribution per class
+df_no_fraud %>% ggplot(aes(x=Amount)) +
+  geom_histogram(color="black", fill="white", bins=100) +
+  labs(
+  x = "Scaled Amount",
+  title= "Distribution of Non-Fraud Transactions"
+ )
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+df_fraud %>% ggplot(aes(x=Amount)) +
+  geom_histogram(color="black", fill="white", bins=50) +
+  labs(
+  x = "Scaled Amount",
+  title= "Distribution of Fraud Transactions"
+ )
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+
+**Takeaway:** Before making a note on the plots, we will first explain
+how to interpret logarithmic scales. In short, log scales show relative
+values rather than absolute ones. Indeed, 2 minus 1 would be displayed
+similarly to 9999 minus 9998, given that we are dealing with percentages
+here. In context, the histograms below would depict the order of growth
+of transaction value. Both distributions represent a similar trajectory,
+with most transactions on the lower end of the graph. It stays
+consistent with the mean value found at USD88, even with max values
+averaging USD20,000.
+
+**Note:** For the second question, we will check the timing of
+transactions to detect anything unusual. We will use only the fraud
+dataset and plot a scatterplot accordingly.
+
+``` r
+## Are there any noteworthy point in time where fraud occured?
+# Scatterplot
+df_fraud %>% ggplot(aes(x=Time, y=Amount)) +
+  geom_point() +
+  labs(
+  y = "Amount ($)", 
+  x = "Time (s)",
+  title= "Fraudulent Transactions Across Time"
+ )
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+**Takeaway:** The graph above does not appear that there is a clustering
+pattern on a time interval. So, we would assume that fraud occurred
+across time quite randomly.
+
+## 6. Class Imbalance
+
+**Note:** Our diagnostics observed a stark imbalance between classes of
+transactions, with fraud only making up 0.2% of all transaction
+statuses. Given the limited pool of examples to train, it poses an issue
+in terms of building an effective machine model to predict if there is a
+fraud. With the minority class being so small, we would expect poor
+performance on the critical task of detecting fraud transactions. In
+that vein, we will use different sampling methods (Undersampling &
+Oversampling) to tackle this problem.
+
+``` r
+# Splitting features & target variable
+X <- df %>% subset(select = -c(Class))
+y <- df$Class
+```
+
+**Definition:** SMOTE (Synthetic Minority Oversampling Technique) is an
+oversampling approach to the minority class. In context, it would mean
+to randomly increase fraud examples by “artificially” replicating to
+have a more balanced class distribution. Further information
+[here](https://rikunert.com/smote_explained).

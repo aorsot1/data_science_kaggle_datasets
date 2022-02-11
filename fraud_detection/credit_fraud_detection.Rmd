@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/9/2022"
+date: "2/11/2022"
 output:
   github_document:
     toc: true
@@ -11,7 +11,7 @@ output:
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Fraud Detection 
+# Fraud Detection
 
 This notebook will attempt to build a predictive algorithm to detect a fraudulent transaction using a training dataset. We will explain the thinking process at every step using LIME (Local Interpretable Model-agnostic Explanations) principles making it accessible and user-friendly.
 
@@ -19,12 +19,15 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
 ```{r}
 ## Importing libraries
+library(dplyr)
 library(tidyverse)
 library(ggplot2)
 library(e1071)
-library(dplyr)
+library(caret)
+
 # install.packages("corrplot")
 library(corrplot)
+# install.packages("DMwR")
 ```
 
 ```{r}
@@ -129,3 +132,58 @@ df_cor[(abs(df_cor) >= 0.5) & (abs(df_cor) !=1)]
 ## 5. Inquiry Exploration
 
 **Note:** In an attempt to answer the first question, we first split our dataset by class types; in other words, fraudulent and non-fraudulent transactions. We then plot the histogram side by side to observe any unusual behavior. In doing so, the non-fraud transactions were heavily right-skewed, making it quite challenging to compare the plots. To solve this issue, we used a logarithmic transformation, making it easier to see and thus, evaluate any similarities and differences.
+
+```{r}
+# How does Amount's distribution behaves across classes?
+
+# Splitting data by fraud class
+df_no_fraud <- df %>% filter(Class == 0)
+df_fraud <- df %>% filter(Class == 1)
+
+# Histogram for Amount Distribution per class
+df_no_fraud %>% ggplot(aes(x=Amount)) +
+  geom_histogram(color="black", fill="white", bins=100) +
+  labs(
+  x = "Scaled Amount",
+  title= "Distribution of Non-Fraud Transactions"
+ )
+
+df_fraud %>% ggplot(aes(x=Amount)) +
+  geom_histogram(color="black", fill="white", bins=50) +
+  labs(
+  x = "Scaled Amount",
+  title= "Distribution of Fraud Transactions"
+ )
+
+```
+
+**Takeaway:** Before making a note on the plots, we will first explain how to interpret logarithmic scales. In short, log scales show relative values rather than absolute ones. Indeed, 2 minus 1 would be displayed similarly to 9999 minus 9998, given that we are dealing with percentages here. In context, the histograms below would depict the order of growth of transaction value. Both distributions represent a similar trajectory, with most transactions on the lower end of the graph. It stays consistent with the mean value found at USD88, even with max values averaging USD20,000.
+
+**Note:** For the second question, we will check the timing of transactions to detect anything unusual. We will use only the fraud dataset and plot a scatterplot accordingly.
+
+```{r}
+## Are there any noteworthy point in time where fraud occured?
+# Scatterplot
+df_fraud %>% ggplot(aes(x=Time, y=Amount)) +
+  geom_point() +
+  labs(
+  y = "Amount ($)", 
+  x = "Time (s)",
+  title= "Fraudulent Transactions Across Time"
+ )
+
+```
+
+**Takeaway:** The graph above does not appear that there is a clustering pattern on a time interval. So, we would assume that fraud occurred across time quite randomly.
+
+## 6. Class Imbalance
+
+**Note:** Our diagnostics observed a stark imbalance between classes of transactions, with fraud only making up 0.2% of all transaction statuses. Given the limited pool of examples to train, it poses an issue in terms of building an effective machine model to predict if there is a fraud. With the minority class being so small, we would expect poor performance on the critical task of detecting fraud transactions. In that vein, we will use different sampling methods (Undersampling & Oversampling) to tackle this problem.
+
+```{r}
+# Splitting features & target variable
+X <- df %>% subset(select = -c(Class))
+y <- df$Class
+```
+
+**Definition:** SMOTE (Synthetic Minority Oversampling Technique) is an oversampling approach to the minority class. In context, it would mean to randomly increase fraud examples by "artificially" replicating to have a more balanced class distribution. Further information [here](https://rikunert.com/smote_explained).
