@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/11/2022"
+date: "2/14/2022"
 output:
   github_document:
     toc: true
@@ -27,7 +27,10 @@ library(caret)
 
 # install.packages("corrplot")
 library(corrplot)
-# install.packages("DMwR")
+# install.packages("ROSE")
+library(ROSE)
+# install.packages("hyperSMURF")
+library(hyperSMURF)
 ```
 
 ```{r}
@@ -187,3 +190,69 @@ y <- df$Class
 ```
 
 **Definition:** SMOTE (Synthetic Minority Oversampling Technique) is an oversampling approach to the minority class. In context, it would mean to randomly increase fraud examples by "artificially" replicating to have a more balanced class distribution. Further information [here](https://rikunert.com/smote_explained).
+
+```{r}
+## now using ROSE for oversampling
+ROSE_over <- ovun.sample(Class ~., data=df,
+                                  p=0.5, seed=1,
+                                  method="over")
+```
+
+```{r}
+data_balanced_over <- ROSE_over$data
+
+## Check class distribution after using SMOTE
+data_balanced_over %>% group_by(Class) %>%
+  summarise(cnt = n()) %>%
+  mutate(freq = round(cnt / sum(cnt), 5)) %>% 
+  arrange(desc(freq))
+```
+
+**Definition:** Near-Miss Algorithm is an undersampling approach on the majority class. In context, we select examples to keep out of the training set based on the distance of majority class examples to minority class examples. Further information [here](https://machinelearningmastery.com/undersampling-algorithms-for-imbalanced-classification/).
+
+```{r}
+## now using ROSE for oversampling
+ROSE_under <- ovun.sample(Class ~., data=df,
+                                  p=0.5, seed=1,
+                                  method="under")
+```
+
+```{r}
+data_balanced_under <- ROSE_under$data
+
+## Check class distribution after using SMOTE
+data_balanced_over %>% group_by(Class) %>%
+  summarise(cnt = n()) %>%
+  mutate(freq = round(cnt / sum(cnt), 5)) %>% 
+  arrange(desc(freq))
+```
+
+**Note:** With the risk of overfitting with oversampling and the possibility to lose valuable information from undersampling, we will also consider combining both to rebalance the distribution. So, we shall proceed with the combination to offer curve out the risks we identified.
+
+```{r}
+## now using ROSE for oversampling
+ROSE_both <- ovun.sample(Class ~., data=df,
+                                  p=0.5, seed=1,
+                                  method="both")
+```
+
+```{r}
+data_balanced_both <- ROSE_under$data
+
+## Check class distribution after using SMOTE
+data_balanced_both %>% group_by(Class) %>%
+  summarise(cnt = n()) %>%
+  mutate(freq = round(cnt / sum(cnt), 5)) %>% 
+  arrange(desc(freq))
+```
+
+```{r}
+df <- data_balanced_both
+df
+```
+
+## 7. Machine Learning set-up
+
+Under this section, we will explain the procedure of two main splitting approach to estimate our models' performance.
+
+**Definition:** Often denoted as the most popular by its simplicity, the train-test split is a sampling technique dividing the dataset between training and testing sets. In doing so, the goal would be to have enough (but not too much) in our training set used for the machine learning model to predict the observations in the testing set as accurately as possible. Most would opt for a 70/30 training-testing split, respectively, others 80/20, 60/40, or whichever else works best for the case scenario. Further information [here](https://machinelearningmastery.com/train-test-split-for-evaluating-machine-learning-algorithms/).
