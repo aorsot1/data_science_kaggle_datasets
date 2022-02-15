@@ -278,13 +278,45 @@ plotcp(tree_cv)
 
 ## 8. Dimensionality Reduction
 
-This section will use dimensionality reduction to trim down the number of features we have. Dimensionality reduction encapsulates the techniques reducing the input variables in our training data. In doing so, we hope to have a more straightforward but effective machine learning model structure and avoid any potential case of overfitting. We will be testing three different methods from Linear Algebra: **PCA, SVD, and LDA** and pick the one capturing the most variability in the datasets after reducing it to principal components.
+This section will use dimensionality reduction to trim down the number of features we have. Dimensionality reduction encapsulates the techniques reducing the input variables in our training data. In doing so, we hope to have a more straightforward but effective machine learning model structure and avoid any potential case of overfitting. We will be testing three different methods from Linear Algebra: **PCA, SVD, and LDA** and pick the one capturing the most variability in the datasets after reducing it to principal components. We performed the evaluation and comparison process using the following [code](https://rpubs.com/JanpuHou/278584) from Janpu Hou on their RPubs blogs.
+
+```{r}
+# Seperating features from target variable
+X <- df %>% select(-Class)
+y <- df %>% select(Class)
+```
+
+```{r}
+# Function to check Variance explained
+pcaCharts <- function(x) {
+    x.var <- x$sdev ^ 2
+    x.pvar <- x.var/sum(x.var)
+    print("proportions of variance:")
+    print(x.pvar)
+    
+    par(mfrow=c(2,2))
+    plot(x.pvar,
+         xlab="Principal component", 
+         ylab="Proportion of variance explained", 
+         ylim=c(0,1), type='b')
+    plot(cumsum(x.pvar),
+         xlab="Principal component", 
+         ylab="Cumulative Proportion of variance explained", 
+         ylim=c(0,1), type='b')
+    screeplot(x)
+    screeplot(x,type="l")
+    par(mfrow=c(1,1))
+}
+```
 
 **Definition:** PCA (Principal Component Analysis) takes data with m-columns projected to a subspace with n-features (n \< m) while preserving the crucial information from the original data; in other words, PCA attempts to find the **principal components (or features)** as its names denote. Further information [here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
 
 ```{r}
-
+pca <- prcomp(X, scale. = TRUE)
+pcaCharts(pca)
 ```
+
+**Takeaway:** Beyond 5, there is very little improvement in the explained variance for the PCA.
 
 **Definition:** SVD (Singular Value Decomposition) is a process breaking down a matrix into its constituents elements by factorizing it into three separate matrices: **M=UΣVᵗ**.
 
@@ -299,11 +331,16 @@ This section will use dimensionality reduction to trim down the number of featur
 Further information [here](https://machinelearningmastery.com/singular-value-decomposition-for-machine-learning/).
 
 ```{r}
-
+svd <- svd(X)
+exp_var <- cumsum(svd$d^2/sum(svd$d^2))
+plot(exp_var) 
 ```
 
 **Definition:** LDA (Linear Discriminant Analysis) seeks to separate class types samples within the training set by finding a linear combination of input variables. The LDA algorithms take roots in matrix factorization, a core concept in Linear Algebra. Futher information [here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
 
 ```{r}
-
+# lda <- lda(formula = Class ~ .,, data = df)
+# X_lda <- predict(lda, df)
+# head(X_lda)
+#train_set <- as.data.frame(predict(lda, training_set))
 ```

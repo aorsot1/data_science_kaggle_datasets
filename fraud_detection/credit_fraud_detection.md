@@ -20016,7 +20016,39 @@ so, we hope to have a more straightforward but effective machine
 learning model structure and avoid any potential case of overfitting. We
 will be testing three different methods from Linear Algebra: **PCA, SVD,
 and LDA** and pick the one capturing the most variability in the
-datasets after reducing it to principal components.
+datasets after reducing it to principal components. We performed the
+evaluation and comparison process using the following
+[code](https://rpubs.com/JanpuHou/278584) from Janpu Hou on their RPubs
+blogs.
+
+``` r
+# Seperating features from target variable
+X <- df %>% select(-Class)
+y <- df %>% select(Class)
+```
+
+``` r
+# Function to check Variance explained
+pcaCharts <- function(x) {
+    x.var <- x$sdev ^ 2
+    x.pvar <- x.var/sum(x.var)
+    print("proportions of variance:")
+    print(x.pvar)
+    
+    par(mfrow=c(2,2))
+    plot(x.pvar,
+         xlab="Principal component", 
+         ylab="Proportion of variance explained", 
+         ylim=c(0,1), type='b')
+    plot(cumsum(x.pvar),
+         xlab="Principal component", 
+         ylab="Cumulative Proportion of variance explained", 
+         ylim=c(0,1), type='b')
+    screeplot(x)
+    screeplot(x,type="l")
+    par(mfrow=c(1,1))
+}
+```
 
 **Definition:** PCA (Principal Component Analysis) takes data with
 m-columns projected to a subspace with n-features (n \< m) while
@@ -20024,6 +20056,24 @@ preserving the crucial information from the original data; in other
 words, PCA attempts to find the **principal components (or features)**
 as its names denote. Further information
 [here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
+
+``` r
+pca <- prcomp(X, scale. = TRUE)
+pcaCharts(pca)
+```
+
+    ## [1] "proportions of variance:"
+    ##  [1] 0.3809943782 0.1112154663 0.0584039790 0.0549593241 0.0412811683
+    ##  [6] 0.0403505604 0.0379273692 0.0331269251 0.0304250198 0.0284879926
+    ## [11] 0.0282005965 0.0236039065 0.0212515594 0.0188417119 0.0158453854
+    ## [16] 0.0138538487 0.0112628545 0.0099235517 0.0084768425 0.0071549426
+    ## [21] 0.0058371743 0.0044144880 0.0029308873 0.0028727878 0.0021151699
+    ## [26] 0.0018748978 0.0016323857 0.0014615993 0.0009036995 0.0003695278
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+**Takeaway:** Beyond 5, there is very little improvement in the
+explained variance for the PCA.
 
 **Definition:** SVD (Singular Value Decomposition) is a process breaking
 down a matrix into its constituents elements by factorizing it into
@@ -20042,8 +20092,23 @@ three separate matrices: **M=UΣVᵗ**.
 Further information
 [here](https://machinelearningmastery.com/singular-value-decomposition-for-machine-learning/).
 
+``` r
+svd <- svd(X)
+exp_var <- cumsum(svd$d^2/sum(svd$d^2))
+plot(exp_var) 
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
 **Definition:** LDA (Linear Discriminant Analysis) seeks to separate
 class types samples within the training set by finding a linear
 combination of input variables. The LDA algorithms take roots in matrix
 factorization, a core concept in Linear Algebra. Futher information
 [here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
+
+``` r
+# lda <- lda(formula = Class ~ .,, data = df)
+# X_lda <- predict(lda, df)
+# head(X_lda)
+#train_set <- as.data.frame(predict(lda, training_set))
+```
