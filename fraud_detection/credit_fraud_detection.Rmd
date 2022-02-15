@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/14/2022"
+date: "2/15/2022"
 output:
   github_document:
     toc: true
@@ -19,7 +19,7 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
 ```{r}
 ## Importing libraries
-set.seed(1)
+# set.seed(1)
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
@@ -29,12 +29,13 @@ library(caret)
 
 library(corrplot)
 library(ROSE)
-library(hyperSMURF)
 
 library(rpart)
+library(tree)
 library(gmodels)
 library(glmnet)
 library(boot)
+library(modEvA)
 ```
 
 ```{r}
@@ -250,11 +251,17 @@ trainingSize  <- round(N*0.7)
 trainingCases <- sample(N, trainingSize)
 train <- df[trainingCases,]
 test <- df[-trainingCases,]
+```
 
-mylogit <- glm(formula = train$Class ~ ., data = train, 
-               family = "binomial")
+```{r}
+# Building tree model
+tree <- rpart(Class ~ ., data = train, method = "class")
 
-summary(mylogit)
+# Making predictions
+pred <- predict(tree, train, type="class")
+obs <- train$Class
+acc <- 1-sum(pred != obs)/nrow(train)
+acc
 ```
 
 **Definition:** As the name would suggest, we will engage here in the process of validation to ensure reliability on our model. Cross-Validation is a statistical method applied in various ways to estimate the model's performance. Some examples are **Holdout Method, K-Fold, Stratified K-Fold, Leave-P-Out.** Further information [here](https://machinelearningmastery.com/k-fold-cross-validation/) and [here](https://towardsdatascience.com/cross-validation-in-machine-learning-72924a69872f).
@@ -263,4 +270,40 @@ summary(mylogit)
 
 ```{r}
 # K-fold cross-validation 
+# Building tree model
+tree_cv <- rpart(Class ~ ., data = train,
+              method = "class", control = rpart.control(xval=5))
+plotcp(tree_cv)
+```
+
+## 8. Dimensionality Reduction
+
+This section will use dimensionality reduction to trim down the number of features we have. Dimensionality reduction encapsulates the techniques reducing the input variables in our training data. In doing so, we hope to have a more straightforward but effective machine learning model structure and avoid any potential case of overfitting. We will be testing three different methods from Linear Algebra: **PCA, SVD, and LDA** and pick the one capturing the most variability in the datasets after reducing it to principal components.
+
+**Definition:** PCA (Principal Component Analysis) takes data with m-columns projected to a subspace with n-features (n \< m) while preserving the crucial information from the original data; in other words, PCA attempts to find the **principal components (or features)** as its names denote. Further information [here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
+
+```{r}
+
+```
+
+**Definition:** SVD (Singular Value Decomposition) is a process breaking down a matrix into its constituents elements by factorizing it into three separate matrices: **M=UΣVᵗ**.
+
+-   M: original matrix
+
+-   U: left singular matrix (columns are left singular vectors) containing eigenvectors of matrix MMᵗ
+
+-   Σ: a diagonal matrix containing singular (eigen)values
+
+-   V: right singular matrix (columns are right singular vectors) containing eigenvectors of matrix MᵗM.
+
+Further information [here](https://machinelearningmastery.com/singular-value-decomposition-for-machine-learning/).
+
+```{r}
+
+```
+
+**Definition:** LDA (Linear Discriminant Analysis) seeks to separate class types samples within the training set by finding a linear combination of input variables. The LDA algorithms take roots in matrix factorization, a core concept in Linear Algebra. Futher information [here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
+
+```{r}
+
 ```

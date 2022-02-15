@@ -1,7 +1,7 @@
 fraud_detection
 ================
 Akoua Orsot
-2/14/2022
+2/15/2022
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -11,6 +11,7 @@ Akoua Orsot
     -   [5. Inquiry Exploration](#5-inquiry-exploration)
     -   [6. Class Imbalance](#6-class-imbalance)
     -   [7. Machine Learning set-up](#7-machine-learning-set-up)
+    -   [8. Dimensionality Reduction](#8-dimensionality-reduction)
 
 # Fraud Detection
 
@@ -24,7 +25,7 @@ user-friendly.
 
 ``` r
 ## Importing libraries
-set.seed(1)
+# set.seed(1)
 library(dplyr)
 ```
 
@@ -47,8 +48,8 @@ library(tidyverse)
 
     ## v ggplot2 3.3.5     v purrr   0.3.4
     ## v tibble  3.1.5     v stringr 1.4.0
-    ## v tidyr   1.1.4     v forcats 0.5.1
-    ## v readr   2.0.2
+    ## v tidyr   1.2.0     v forcats 0.5.1
+    ## v readr   2.1.2
 
     ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
@@ -82,9 +83,15 @@ library(ROSE)
     ## Loaded ROSE 0.0-4
 
 ``` r
-library(hyperSMURF)
-
 library(rpart)
+library(tree)
+```
+
+    ## Registered S3 method overwritten by 'tree':
+    ##   method     from
+    ##   print.tree cli
+
+``` r
 library(gmodels)
 library(glmnet)
 ```
@@ -110,6 +117,10 @@ library(boot)
     ## The following object is masked from 'package:lattice':
     ## 
     ##     melanoma
+
+``` r
+library(modEvA)
+```
 
 ``` r
 ## Loading dataset
@@ -19959,70 +19970,20 @@ trainingSize  <- round(N*0.7)
 trainingCases <- sample(N, trainingSize)
 train <- df[trainingCases,]
 test <- df[-trainingCases,]
-
-mylogit <- glm(formula = train$Class ~ ., data = train, 
-               family = "binomial")
 ```
-
-    ## Warning: glm.fit: algorithm did not converge
-
-    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ``` r
-summary(mylogit)
+# Building tree model
+tree <- rpart(Class ~ ., data = train, method = "class")
+
+# Making predictions
+pred <- predict(tree, train, type="class")
+obs <- train$Class
+acc <- 1-sum(pred != obs)/nrow(train)
+acc
 ```
 
-    ## 
-    ## Call:
-    ## glm(formula = train$Class ~ ., family = "binomial", data = train)
-    ## 
-    ## Deviance Residuals: 
-    ##     Min       1Q   Median       3Q      Max  
-    ## -8.4904  -0.2624   0.0000   0.0000   2.8214  
-    ## 
-    ## Coefficients:
-    ##               Estimate Std. Error z value Pr(>|z|)    
-    ## (Intercept) -2.683e+00  2.686e-02 -99.880  < 2e-16 ***
-    ## Time        -8.263e-06  2.543e-07 -32.497  < 2e-16 ***
-    ## V1           6.875e-01  1.836e-02  37.440  < 2e-16 ***
-    ## V2           6.049e-01  2.714e-02  22.286  < 2e-16 ***
-    ## V3           2.825e-01  1.434e-02  19.693  < 2e-16 ***
-    ## V4           7.494e-01  8.525e-03  87.897  < 2e-16 ***
-    ## V5           7.748e-01  2.116e-02  36.623  < 2e-16 ***
-    ## V6          -5.543e-01  1.386e-02 -40.002  < 2e-16 ***
-    ## V7          -5.830e-01  2.590e-02 -22.504  < 2e-16 ***
-    ## V8          -4.198e-01  8.885e-03 -47.251  < 2e-16 ***
-    ## V9          -3.186e-01  1.212e-02 -26.293  < 2e-16 ***
-    ## V10         -7.074e-01  1.657e-02 -42.683  < 2e-16 ***
-    ## V11          4.785e-01  1.166e-02  41.027  < 2e-16 ***
-    ## V12         -1.053e+00  1.706e-02 -61.689  < 2e-16 ***
-    ## V13         -3.696e-01  8.072e-03 -45.785  < 2e-16 ***
-    ## V14         -1.427e+00  1.954e-02 -73.012  < 2e-16 ***
-    ## V15         -1.671e-01  9.009e-03 -18.549  < 2e-16 ***
-    ## V16         -7.215e-01  1.766e-02 -40.868  < 2e-16 ***
-    ## V17         -8.896e-01  2.441e-02 -36.446  < 2e-16 ***
-    ## V18         -2.689e-01  1.468e-02 -18.319  < 2e-16 ***
-    ## V19          3.406e-01  1.253e-02  27.187  < 2e-16 ***
-    ## V20         -8.343e-01  2.705e-02 -30.840  < 2e-16 ***
-    ## V21          4.015e-02  1.113e-02   3.608 0.000309 ***
-    ## V22          7.768e-01  1.493e-02  52.017  < 2e-16 ***
-    ## V23          4.608e-01  2.486e-02  18.536  < 2e-16 ***
-    ## V24         -2.595e-02  1.597e-02  -1.625 0.104222    
-    ## V25          1.204e-02  1.787e-02   0.674 0.500302    
-    ## V26         -3.153e-01  1.883e-02 -16.749  < 2e-16 ***
-    ## V27          8.949e-02  2.791e-02   3.206 0.001344 ** 
-    ## V28          7.965e-01  3.777e-02  21.089  < 2e-16 ***
-    ## Amount       2.141e+00  6.904e-02  31.008  < 2e-16 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## 
-    ## (Dispersion parameter for binomial family taken to be 1)
-    ## 
-    ##     Null deviance: 550025  on 396758  degrees of freedom
-    ## Residual deviance: 109055  on 396728  degrees of freedom
-    ## AIC: 109117
-    ## 
-    ## Number of Fisher Scoring iterations: 25
+    ## [1] 0.9346606
 
 **Definition:** As the name would suggest, we will engage here in the
 process of validation to ensure reliability on our model.
@@ -20038,4 +19999,51 @@ cross-validation
 
 ``` r
 # K-fold cross-validation 
+# Building tree model
+tree_cv <- rpart(Class ~ ., data = train,
+              method = "class", control = rpart.control(xval=5))
+plotcp(tree_cv)
 ```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+## 8. Dimensionality Reduction
+
+This section will use dimensionality reduction to trim down the number
+of features we have. Dimensionality reduction encapsulates the
+techniques reducing the input variables in our training data. In doing
+so, we hope to have a more straightforward but effective machine
+learning model structure and avoid any potential case of overfitting. We
+will be testing three different methods from Linear Algebra: **PCA, SVD,
+and LDA** and pick the one capturing the most variability in the
+datasets after reducing it to principal components.
+
+**Definition:** PCA (Principal Component Analysis) takes data with
+m-columns projected to a subspace with n-features (n \< m) while
+preserving the crucial information from the original data; in other
+words, PCA attempts to find the **principal components (or features)**
+as its names denote. Further information
+[here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
+
+**Definition:** SVD (Singular Value Decomposition) is a process breaking
+down a matrix into its constituents elements by factorizing it into
+three separate matrices: **M=UΣVᵗ**.
+
+-   M: original matrix
+
+-   U: left singular matrix (columns are left singular vectors)
+    containing eigenvectors of matrix MMᵗ
+
+-   Σ: a diagonal matrix containing singular (eigen)values
+
+-   V: right singular matrix (columns are right singular vectors)
+    containing eigenvectors of matrix MᵗM.
+
+Further information
+[here](https://machinelearningmastery.com/singular-value-decomposition-for-machine-learning/).
+
+**Definition:** LDA (Linear Discriminant Analysis) seeks to separate
+class types samples within the training set by finding a linear
+combination of input variables. The LDA algorithms take roots in matrix
+factorization, a core concept in Linear Algebra. Futher information
+[here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
