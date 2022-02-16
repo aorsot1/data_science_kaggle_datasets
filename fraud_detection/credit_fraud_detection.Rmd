@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/15/2022"
+date: "2/16/2022"
 output:
   github_document:
     toc: true
@@ -26,16 +26,16 @@ library(ggplot2)
 library(e1071)
 library(caret)
 
-
 library(corrplot)
 library(ROSE)
 
 library(rpart)
-library(tree)
 library(gmodels)
 library(glmnet)
 library(boot)
 library(modEvA)
+require(MASS)
+library(Dict)
 ```
 
 ```{r}
@@ -48,12 +48,12 @@ head(df)
 
 ```{r}
 ## Glimpse of the data
-df %>% str()
+str(df)
 ```
 
 ```{r}
 ## Descriptive Statistics
-df %>% summary()
+summary(df)
 ```
 
 **Takeaway:** The following percentage breakdown confirms the note in the project description; indeed, we have a considerable class imbalance with the target variable. It stays consistent that most fraudulent activities are much less frequent than non-fraudulent. Before proceeding, we shall note it to avoid any overfitting issues when fitting the machine learning models.
@@ -281,9 +281,8 @@ plotcp(tree_cv)
 This section will use dimensionality reduction to trim down the number of features we have. Dimensionality reduction encapsulates the techniques reducing the input variables in our training data. In doing so, we hope to have a more straightforward but effective machine learning model structure and avoid any potential case of overfitting. We will be testing three different methods from Linear Algebra: **PCA, SVD, and LDA** and pick the one capturing the most variability in the datasets after reducing it to principal components. We performed the evaluation and comparison process using the following [code](https://rpubs.com/JanpuHou/278584) from Janpu Hou on their RPubs blogs.
 
 ```{r}
-# Seperating features from target variable
-X <- df %>% select(-Class)
-y <- df %>% select(Class)
+# Seperating features from target vari
+X <- subset(df, select = -c(Class))
 ```
 
 ```{r}
@@ -312,11 +311,27 @@ pcaCharts <- function(x) {
 **Definition:** PCA (Principal Component Analysis) takes data with m-columns projected to a subspace with n-features (n \< m) while preserving the crucial information from the original data; in other words, PCA attempts to find the **principal components (or features)** as its names denote. Further information [here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
 
 ```{r}
-pca <- prcomp(X, scale. = TRUE)
-pcaCharts(pca)
+
 ```
 
-**Takeaway:** Beyond 5, there is very little improvement in the explained variance for the PCA.
+```{r}
+pca <- prcomp(X, scale. = TRUE)
+# pcaCharts(pca)
+
+# Calculate Explained Variance
+pca_var <- round((pca$sdev^2)/sum(pca$sdev^2) * 100, 1) 
+n_pc <- seq(1, length(pca_var))
+pca_df <- as.data.frame(pca_var, n_pc)
+
+# Graph of explained variance
+pca_df %>% 
+  ggplot(aes(x = n_pc, y = pca_var)) +
+    geom_bar(stat = 'identity') +
+    labs(title = "PCA Variation Plot",
+         xlab = "PCs",
+         ylab = "Prop. of variance explained",
+         ylim = c(0, 100))
+```
 
 **Definition:** SVD (Singular Value Decomposition) is a process breaking down a matrix into its constituents elements by factorizing it into three separate matrices: **M=UΣVᵗ**.
 
@@ -332,15 +347,47 @@ Further information [here](https://machinelearningmastery.com/singular-value-dec
 
 ```{r}
 svd <- svd(X)
-exp_var <- cumsum(svd$d^2/sum(svd$d^2))
-plot(exp_var) 
+
+# Calculate Explained Variance
+svd_var <- round(svd$d^2/sum(svd$d^2) * 100, 4) 
+n_pc <- seq(1, length(svd_var))
+svd_df <- as.data.frame(svd_var, n_pc)
+
+# Graph of explained variance
+svd_df %>% 
+  ggplot(aes(x = n_pc, y = svd_var)) +
+    geom_bar(stat = 'identity') +
+    labs(title = "SVD Variation Plot",
+         xlab = "PCs",
+         ylab = "Prop. of variance explained",
+         ylim = c(0, 100))
 ```
 
-**Definition:** LDA (Linear Discriminant Analysis) seeks to separate class types samples within the training set by finding a linear combination of input variables. The LDA algorithms take roots in matrix factorization, a core concept in Linear Algebra. Futher information [here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
+**Takeaway:** Beyond 5 principal components, there is very little improvement in the explained variance for PCA while the first column explained the majority of the variance using SVD. We will move forward with the reduced dataframe from SVD showing better results.
 
 ```{r}
-# lda <- lda(formula = Class ~ .,, data = df)
-# X_lda <- predict(lda, df)
-# head(X_lda)
-#train_set <- as.data.frame(predict(lda, training_set))
+# Partitioning the data
+# X_svd <- svd(X)
+# y <- subset(df, select = c(Class))
+# df_svd <- as.data.frame(X_svd)
+# 
+# index <- createDataPartition(y = y, p = .7, times = 1, list = FALSE)
+# train <- 
 ```
+
+## 9. Machine Learning - Simple Models
+
+This section will leverage the powerful sci-kit-learn package to build multiple models with little to no parameter tuning for comparison. We will only use the cross-validation error on our training dataset to avoid any data leakage.
+
+**Definition:** Logistic Regression is a predictive classifier that models an S-shaped curve (Sigmoid function) on the data to label the examples. Further information [here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
+
+```{r}
+# logreg <- glm(data=)
+```
+
+**Definition:** k-Nearest Neighbors is a machine learning model built on Euclidean distance that categorizes the observations. Further information [here](https://towardsdatascience.com/machine-learning-basics-with-the-k-nearest-neighbors-algorithm-6a6e71d01761#:~:text=Summary-,The%20k%2Dnearest%20neighbors%20(KNN)%20algorithm%20is%20a%20simple,that%20data%20in%20use%20grows.).
+
+**Definition:** Stochastic Gradient Descent is an iterative algorithm that minimizes the model's error rate. Further information [here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
+
+**Definition:** A Decision Tree is a supervised machine learning algorithm building an actual tree based on splits within the data. [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
+

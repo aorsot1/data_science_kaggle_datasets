@@ -1,7 +1,7 @@
 fraud_detection
 ================
 Akoua Orsot
-2/15/2022
+2/16/2022
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -12,6 +12,8 @@ Akoua Orsot
     -   [6. Class Imbalance](#6-class-imbalance)
     -   [7. Machine Learning set-up](#7-machine-learning-set-up)
     -   [8. Dimensionality Reduction](#8-dimensionality-reduction)
+    -   [9. Machine Learning - Simple
+        Models](#9-machine-learning---simple-models)
 
 # Fraud Detection
 
@@ -84,14 +86,6 @@ library(ROSE)
 
 ``` r
 library(rpart)
-library(tree)
-```
-
-    ## Registered S3 method overwritten by 'tree':
-    ##   method     from
-    ##   print.tree cli
-
-``` r
 library(gmodels)
 library(glmnet)
 ```
@@ -120,6 +114,20 @@ library(boot)
 
 ``` r
 library(modEvA)
+require(MASS)
+```
+
+    ## Loading required package: MASS
+
+    ## 
+    ## Attaching package: 'MASS'
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     select
+
+``` r
+library(Dict)
 ```
 
 ``` r
@@ -159,7 +167,7 @@ head(df)
 
 ``` r
 ## Glimpse of the data
-df %>% str()
+str(df)
 ```
 
     ## spec_tbl_df [284,807 x 31] (S3: spec_tbl_df/tbl_df/tbl/data.frame)
@@ -232,7 +240,7 @@ df %>% str()
 
 ``` r
 ## Descriptive Statistics
-df %>% summary()
+summary(df)
 ```
 
     ##       Time              V1                  V2                  V3          
@@ -20022,9 +20030,8 @@ evaluation and comparison process using the following
 blogs.
 
 ``` r
-# Seperating features from target variable
-X <- df %>% select(-Class)
-y <- df %>% select(Class)
+# Seperating features from target vari
+X <- subset(df, select = -c(Class))
 ```
 
 ``` r
@@ -20059,21 +20066,29 @@ as its names denote. Further information
 
 ``` r
 pca <- prcomp(X, scale. = TRUE)
-pcaCharts(pca)
+# pcaCharts(pca)
+
+# Calculate Explained Variance
+pca_var <- round((pca$sdev^2)/sum(pca$sdev^2) * 100, 1) 
+n_pc <- seq(1, length(pca_var))
+pca_df <- as.data.frame(pca_var, n_pc)
 ```
 
-    ## [1] "proportions of variance:"
-    ##  [1] 0.3809943782 0.1112154663 0.0584039790 0.0549593241 0.0412811683
-    ##  [6] 0.0403505604 0.0379273692 0.0331269251 0.0304250198 0.0284879926
-    ## [11] 0.0282005965 0.0236039065 0.0212515594 0.0188417119 0.0158453854
-    ## [16] 0.0138538487 0.0112628545 0.0099235517 0.0084768425 0.0071549426
-    ## [21] 0.0058371743 0.0044144880 0.0029308873 0.0028727878 0.0021151699
-    ## [26] 0.0018748978 0.0016323857 0.0014615993 0.0009036995 0.0003695278
+    ## Warning in as.data.frame.numeric(pca_var, n_pc): 'row.names' is not a character
+    ## vector of length 30 -- omitting it. Will be an error!
 
-![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+``` r
+# Graph of explained variance
+pca_df %>% 
+  ggplot(aes(x = n_pc, y = pca_var)) +
+    geom_bar(stat = 'identity') +
+    labs(title = "PCA Variation Plot",
+         xlab = "PCs",
+         ylab = "Prop. of variance explained",
+         ylim = c(0, 100))
+```
 
-**Takeaway:** Beyond 5, there is very little improvement in the
-explained variance for the PCA.
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
 
 **Definition:** SVD (Singular Value Decomposition) is a process breaking
 down a matrix into its constituents elements by factorizing it into
@@ -20094,21 +20109,69 @@ Further information
 
 ``` r
 svd <- svd(X)
-exp_var <- cumsum(svd$d^2/sum(svd$d^2))
-plot(exp_var) 
+
+# Calculate Explained Variance
+svd_var <- round(svd$d^2/sum(svd$d^2) * 100, 4) 
+n_pc <- seq(1, length(svd_var))
+svd_df <- as.data.frame(svd_var, n_pc)
 ```
 
-![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
-
-**Definition:** LDA (Linear Discriminant Analysis) seeks to separate
-class types samples within the training set by finding a linear
-combination of input variables. The LDA algorithms take roots in matrix
-factorization, a core concept in Linear Algebra. Futher information
-[here](https://machinelearningmastery.com/linear-discriminant-analysis-for-dimensionality-reduction-in-python/).
+    ## Warning in as.data.frame.numeric(svd_var, n_pc): 'row.names' is not a character
+    ## vector of length 30 -- omitting it. Will be an error!
 
 ``` r
-# lda <- lda(formula = Class ~ .,, data = df)
-# X_lda <- predict(lda, df)
-# head(X_lda)
-#train_set <- as.data.frame(predict(lda, training_set))
+# Graph of explained variance
+svd_df %>% 
+  ggplot(aes(x = n_pc, y = svd_var)) +
+    geom_bar(stat = 'identity') +
+    labs(title = "SVD Variation Plot",
+         xlab = "PCs",
+         ylab = "Prop. of variance explained",
+         ylim = c(0, 100))
 ```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-29-1.png)<!-- -->
+
+**Takeaway:** Beyond 5 principal components, there is very little
+improvement in the explained variance for PCA while the first column
+explained the majority of the variance using SVD. We will move forward
+with the reduced dataframe from SVD showing better results.
+
+``` r
+# Partitioning the data
+# X_svd <- svd(X)
+# y <- subset(df, select = c(Class))
+# df_svd <- as.data.frame(X_svd)
+# 
+# index <- createDataPartition(y = y, p = .7, times = 1, list = FALSE)
+# train <- 
+```
+
+## 9. Machine Learning - Simple Models
+
+This section will leverage the powerful sci-kit-learn package to build
+multiple models with little to no parameter tuning for comparison. We
+will only use the cross-validation error on our training dataset to
+avoid any data leakage.
+
+**Definition:** Logistic Regression is a predictive classifier that
+models an S-shaped curve (Sigmoid function) on the data to label the
+examples. Further information
+[here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
+
+``` r
+# logreg <- glm(data=)
+```
+
+**Definition:** k-Nearest Neighbors is a machine learning model built on
+Euclidean distance that categorizes the observations. Further
+information
+[here](https://towardsdatascience.com/machine-learning-basics-with-the-k-nearest-neighbors-algorithm-6a6e71d01761#:~:text=Summary-,The%20k%2Dnearest%20neighbors%20(KNN)%20algorithm%20is%20a%20simple,that%20data%20in%20use%20grows.).
+
+**Definition:** Stochastic Gradient Descent is an iterative algorithm
+that minimizes the model’s error rate. Further information
+[here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
+
+**Definition:** A Decision Tree is a supervised machine learning
+algorithm building an actual tree based on splits within the data.
+[here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
