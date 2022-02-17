@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/16/2022"
+date: "2/17/2022"
 output:
   github_document:
     toc: true
@@ -41,14 +41,13 @@ library(Dict)
 ```{r}
 ## Loading dataset
 df <- read_csv(file = 'C:/Users/Akoua Orsot/Desktop/ds_projects_data/creditcard.csv')
-head(df)
 ```
 
 ## 2. Initial Diagnostics
 
 ```{r}
 ## Glimpse of the data
-str(df)
+head(df)
 ```
 
 ```{r}
@@ -311,10 +310,6 @@ pcaCharts <- function(x) {
 **Definition:** PCA (Principal Component Analysis) takes data with m-columns projected to a subspace with n-features (n \< m) while preserving the crucial information from the original data; in other words, PCA attempts to find the **principal components (or features)** as its names denote. Further information [here](https://machinelearningmastery.com/calculate-principal-component-analysis-scratch-python/).
 
 ```{r}
-
-```
-
-```{r}
 pca <- prcomp(X, scale. = TRUE)
 # pcaCharts(pca)
 
@@ -363,31 +358,63 @@ svd_df %>%
          ylim = c(0, 100))
 ```
 
-**Takeaway:** Beyond 5 principal components, there is very little improvement in the explained variance for PCA while the first column explained the majority of the variance using SVD. We will move forward with the reduced dataframe from SVD showing better results.
+**Takeaway:** Beyond 5 principal components, there is very little improvement in the explained variance for PCA while the first column explained the majority of the variance using SVD. We will move forward with the reduced dataframe from PCA proving more stable.
 
 ```{r}
-# Partitioning the data
-# X_svd <- svd(X)
-# y <- subset(df, select = c(Class))
-# df_svd <- as.data.frame(X_svd)
-# 
-# index <- createDataPartition(y = y, p = .7, times = 1, list = FALSE)
-# train <- 
+# Consolodiating PCA transformed dataframe
+X_pca <- as.data.frame(pca$x[, 1:5])
+y <- subset(df, select = c(Class))
+df_pca <- cbind(X_pca, y)
+```
+
+```{r}
+# Partitioning train-test split
+index <- createDataPartition(y = df_pca$Class, p = .7, 
+                             times = 1, list = FALSE)
+train <- df_pca[index,]
+test  <- df_pca[-index,]
 ```
 
 ## 9. Machine Learning - Simple Models
 
 This section will leverage the powerful sci-kit-learn package to build multiple models with little to no parameter tuning for comparison. We will only use the cross-validation error on our training dataset to avoid any data leakage.
 
+```{r}
+# K-fold cross validation
+kfold_cv <- trainControl(method = "cv",  number = 3, 
+                        savePredictions = TRUE)
+```
+
 **Definition:** Logistic Regression is a predictive classifier that models an S-shaped curve (Sigmoid function) on the data to label the examples. Further information [here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
 
 ```{r}
-# logreg <- glm(data=)
-```
+model <- train(form=Class~., data = train,
+               method="glm", family="binomial", 
+               trControl=kfold_cv, trace = FALSE)
 
-**Definition:** k-Nearest Neighbors is a machine learning model built on Euclidean distance that categorizes the observations. Further information [here](https://towardsdatascience.com/machine-learning-basics-with-the-k-nearest-neighbors-algorithm-6a6e71d01761#:~:text=Summary-,The%20k%2Dnearest%20neighbors%20(KNN)%20algorithm%20is%20a%20simple,that%20data%20in%20use%20grows.).
+pred = predict(model, newdata=train)
+accuracy <- table(pred, train$Class)
+sum(diag(accuracy))/sum(accuracy)
+```
 
 **Definition:** Stochastic Gradient Descent is an iterative algorithm that minimizes the model's error rate. Further information [here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
 
+```{r}
+model <- train(form=Class~., data = train,
+               method="gbm", trControl=kfold_cv)
+
+pred = predict(model, newdata=train)
+accuracy <- table(pred, train$Class)
+sum(diag(accuracy))/sum(accuracy)
+```
+
 **Definition:** A Decision Tree is a supervised machine learning algorithm building an actual tree based on splits within the data. [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
+```{r}
+model <- train(form=Class~., data = train,
+               method="rpart", trControl=kfold_cv)
+
+pred = predict(model, newdata=train)
+accuracy <- table(pred, train$Class)
+sum(diag(accuracy))/sum(accuracy)
+```
