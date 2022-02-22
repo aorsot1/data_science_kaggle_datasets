@@ -1,7 +1,7 @@
 ---
 title: "fraud_detection"
 author: "Akoua Orsot"
-date: "2/17/2022"
+date: "2/22/2022"
 output:
   github_document:
     toc: true
@@ -33,9 +33,12 @@ library(rpart)
 library(gmodels)
 library(glmnet)
 library(boot)
-library(modEvA)
+library(MLmetrics)
 require(MASS)
 library(Dict)
+library(purrr) # for functional programming (map)
+library(pROC) # for AUC calculations
+library(PRROC) # for Precision-Recall curve calculations
 ```
 
 ```{r}
@@ -382,39 +385,64 @@ This section will leverage the powerful sci-kit-learn package to build multiple 
 ```{r}
 # K-fold cross validation
 kfold_cv <- trainControl(method = "cv",  number = 3, 
-                        savePredictions = TRUE)
+                        savePredictions = "all"
+                        )
 ```
 
 **Definition:** Logistic Regression is a predictive classifier that models an S-shaped curve (Sigmoid function) on the data to label the examples. Further information [here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
 
 ```{r}
-model <- train(form=Class~., data = train,
-               method="glm", family="binomial", 
-               trControl=kfold_cv, trace = FALSE)
-
-pred = predict(model, newdata=train)
-accuracy <- table(pred, train$Class)
-sum(diag(accuracy))/sum(accuracy)
-```
-
-**Definition:** Stochastic Gradient Descent is an iterative algorithm that minimizes the model's error rate. Further information [here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
-
-```{r}
-model <- train(form=Class~., data = train,
-               method="gbm", trControl=kfold_cv)
-
-pred = predict(model, newdata=train)
-accuracy <- table(pred, train$Class)
-sum(diag(accuracy))/sum(accuracy)
+logreg_model <- train(form=Class~., data = train,
+               method="glm", family="binomial",
+               trControl=kfold_cv, tuneLength=3)
 ```
 
 **Definition:** A Decision Tree is a supervised machine learning algorithm building an actual tree based on splits within the data. [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
 ```{r}
-model <- train(form=Class~., data = train,
-               method="rpart", trControl=kfold_cv)
+tree_model <- train(form=Class~., data = train,
+               method="rpart", 
+               trControl=kfold_cv, tuneLength=3)
+```
 
-pred = predict(model, newdata=train)
-accuracy <- table(pred, train$Class)
-sum(diag(accuracy))/sum(accuracy)
+**Definition:** Stochastic Gradient Descent is an iterative algorithm that minimizes the model's error rate. Further information [here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
+
+```{r}
+sgd_model <- train(form=Class~., data = train,
+               method="gbm", verbose = FALSE,
+               trControl=kfold_cv, tuneLength=3)
+```
+
+```{r}
+# Examine results for test set
+model_list <- list(logreg = logreg_model,
+                   tree = tree_model,
+                   sgd = sgd_model)
+
+calc_auprc <- function(model, data){
+  
+  index_class2 <- data$Class == "Class2"
+  index_class1 <- data$Class == "Class1"
+  
+  predictions <- predict(model, data, type = "prob")
+  
+  pr.curve(predictions$Class2[index_class2], predictions$Class2[index_class1], curve = TRUE)
+  
+}
+# Get results for all 5 models
+# model_list_pr <- model_list %>%
+#   map(calc_auprc, data = train)
+# 
+# model_list_pr %>%
+#   map(function(the_mod) the_mod$auc.integral)
+```
+
+**Takeaway:** Our two best models are....
+
+# 10. Machine Learning - Ensemble Methods
+
+This section will extend our work in machine learning to incorporate ensemble methods. We generated simple models and compared the scores, which appear satisfactory, with the lowest at 0.974 for the Average Precision Score. However, we may want more stability and minor variation in our predictive algorithm; it is where ensemble techniques come in. Most often, they act as a 'superposer' of multiple models throughout various ways and thus, bolster their predictive power. Further Information [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+
+```{r}
+
 ```
