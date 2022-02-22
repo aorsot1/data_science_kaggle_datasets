@@ -130,6 +130,7 @@ library(MLmetrics)
     ##     Recall
 
 ``` r
+library(MLeval)
 require(MASS)
 ```
 
@@ -20142,22 +20143,41 @@ examples. Further information
 [here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
 
 ``` r
-logreg_model <- train(form=Class~., data = train,
+model <- train(form=Class~., data = train,
                method="glm", family="binomial",
                trControl=kfold_cv, tuneLength=3)
 ```
 
     ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
+``` r
+preds <- predict(model, train, type="prob")[,2] #prob of positive class
+preds_pos <- preds[train[,6]==1] #preds for true positive class
+preds_neg <- preds[train[,6]==0] #preds for true negative class
+
+PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+plot(PRC)
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+
 **Definition:** A Decision Tree is a supervised machine learning
 algorithm building an actual tree based on splits within the data.
 [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
 ``` r
-tree_model <- train(form=Class~., data = train,
+model <- train(form=Class~., data = train,
                method="rpart", 
                trControl=kfold_cv, tuneLength=3)
+preds <- predict(model, train, type="prob")[,2] #prob of positive class
+preds_pos <- preds[train[,6]==1] #preds for true positive class
+preds_neg <- preds[train[,6]==0] #preds for true negative class
+
+PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+plot(PRC)
 ```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
 **Definition:** Stochastic Gradient Descent is an iterative algorithm
 that minimizes the model’s error rate. Further information
@@ -20167,33 +20187,18 @@ that minimizes the model’s error rate. Further information
 sgd_model <- train(form=Class~., data = train,
                method="gbm", verbose = FALSE,
                trControl=kfold_cv, tuneLength=3)
+
+preds <- predict(model, train, type="prob")[,2] #prob of positive class
+preds_pos <- preds[train[,6]==1] #preds for true positive class
+preds_neg <- preds[train[,6]==0] #preds for true negative class
+
+PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+plot(PRC)
 ```
 
-``` r
-# Examine results for test set
-model_list <- list(logreg = logreg_model,
-                   tree = tree_model,
-                   sgd = sgd_model)
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
-calc_auprc <- function(model, data){
-  
-  index_class2 <- data$Class == "Class2"
-  index_class1 <- data$Class == "Class1"
-  
-  predictions <- predict(model, data, type = "prob")
-  
-  pr.curve(predictions$Class2[index_class2], predictions$Class2[index_class1], curve = TRUE)
-  
-}
-# Get results for all 5 models
-# model_list_pr <- model_list %>%
-#   map(calc_auprc, data = train)
-# 
-# model_list_pr %>%
-#   map(function(the_mod) the_mod$auc.integral)
-```
-
-**Takeaway:** Our two best models are….
+**Takeaway:** Our best model is the Logistic regression at 96.2% AUPRC.
 
 # 10. Machine Learning - Ensemble Methods
 
