@@ -1,7 +1,7 @@
 fraud_detection
 ================
 Akoua Orsot
-2/22/2022
+2/23/2022
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -172,6 +172,10 @@ library(PRROC) # for Precision-Recall curve calculations
     ## The following object is masked from 'package:ROSE':
     ## 
     ##     roc.curve
+
+``` r
+library(ranger)
+```
 
 ``` r
 ## Loading dataset
@@ -20123,13 +20127,6 @@ train <- df_pca[index,]
 test  <- df_pca[-index,]
 ```
 
-## 9. Machine Learning - Simple Models
-
-This section will leverage the powerful sci-kit-learn package to build
-multiple models with little to no parameter tuning for comparison. We
-will only use the cross-validation error on our training dataset to
-avoid any data leakage.
-
 ``` r
 # K-fold cross validation
 kfold_cv <- trainControl(method = "cv",  number = 3, 
@@ -20137,13 +20134,20 @@ kfold_cv <- trainControl(method = "cv",  number = 3,
                         )
 ```
 
+## 9. Machine Learning - Simple Models
+
+This section will leverage the powerful sci-kit-learn package to build
+multiple models with little to no parameter tuning for comparison. We
+will only use the cross-validation error on our training dataset to
+avoid any data leakage.
+
 **Definition:** Logistic Regression is a predictive classifier that
 models an S-shaped curve (Sigmoid function) on the data to label the
 examples. Further information
 [here](https://machinelearningmastery.com/logistic-regression-for-machine-learning/).
 
 ``` r
-model <- train(form=Class~., data = train,
+logreg_model <- train(form=Class~., data = train,
                method="glm", family="binomial",
                trControl=kfold_cv, tuneLength=3)
 ```
@@ -20151,7 +20155,7 @@ model <- train(form=Class~., data = train,
     ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
 ``` r
-preds <- predict(model, train, type="prob")[,2] #prob of positive class
+preds <- predict(logreg_model, train, type="prob")[,2] #prob of positive class
 preds_pos <- preds[train[,6]==1] #preds for true positive class
 preds_neg <- preds[train[,6]==0] #preds for true negative class
 
@@ -20166,10 +20170,10 @@ algorithm building an actual tree based on splits within the data.
 [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
 ``` r
-model <- train(form=Class~., data = train,
+tree_model <- train(form=Class~., data = train,
                method="rpart", 
                trControl=kfold_cv, tuneLength=3)
-preds <- predict(model, train, type="prob")[,2] #prob of positive class
+preds <- predict(tree_model, train, type="prob")[,2] #prob of positive class
 preds_pos <- preds[train[,6]==1] #preds for true positive class
 preds_neg <- preds[train[,6]==0] #preds for true negative class
 
@@ -20184,19 +20188,17 @@ that minimizes the model’s error rate. Further information
 [here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
 
 ``` r
-sgd_model <- train(form=Class~., data = train,
-               method="gbm", verbose = FALSE,
-               trControl=kfold_cv, tuneLength=3)
-
-preds <- predict(model, train, type="prob")[,2] #prob of positive class
-preds_pos <- preds[train[,6]==1] #preds for true positive class
-preds_neg <- preds[train[,6]==0] #preds for true negative class
-
-PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
-plot(PRC)
+# model <- train(form=Class~., data = train,
+#                method="gbm", verbose = FALSE,
+#                trControl=kfold_cv, tuneLength=3)
+# 
+# preds <- predict(model, train, type="prob")[,2] #prob of positive class
+# preds_pos <- preds[train[,6]==1] #preds for true positive class
+# preds_neg <- preds[train[,6]==0] #preds for true negative class
+# 
+# PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+# plot(PRC)
 ```
-
-![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
 
 **Takeaway:** Our best model is the Logistic regression at 96.2% AUPRC.
 
@@ -20211,3 +20213,25 @@ Most often, they act as a ‘superposer’ of multiple models throughout
 various ways and thus, bolster their predictive power. Further
 Information
 [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+
+**Definition:** Random Forest builds onto the logic of decision trees by
+agglomerating multiple trees and obtaining a given prediction from
+majority voting; in other words, it is a Decision Tree times n (number
+of trees). Further information
+[here](https://towardsdatascience.com/understanding-random-forest-58381e0602d2).
+
+``` r
+# mtry <- sqrt(ncol(train))
+# tunegrid <- expand.grid(mtry=mtry)
+# rf_model <- train(form=Class~., data = train,
+#                method="rf", verbose = FALSE,
+#                trControl=kfold_cv, tuneGrid=tunegrid,
+#                tuneLength=3)
+# 
+# preds <- predict(rf_model, train, type="prob")[,2] #prob of positive class
+# preds_pos <- preds[train[,6]==1] #preds for true positive class
+# preds_neg <- preds[train[,6]==0] #preds for true negative class
+# 
+# PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+# plot(PRC)
+```
