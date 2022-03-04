@@ -282,7 +282,7 @@ plotcp(tree_cv)
 This section will use dimensionality reduction to trim down the number of features we have. Dimensionality reduction encapsulates the techniques reducing the input variables in our training data. In doing so, we hope to have a more straightforward but effective machine learning model structure and avoid any potential case of overfitting. We will be testing three different methods from Linear Algebra: **PCA, SVD, and LDA** and pick the one capturing the most variability in the datasets after reducing it to principal components. We performed the evaluation and comparison process using the following [code](https://rpubs.com/JanpuHou/278584) from Janpu Hou on their RPubs blogs.
 
 ```{r}
-# Seperating features from target vari
+# Seperating features from target variable
 X <- subset(df, select = -c(Class))
 ```
 
