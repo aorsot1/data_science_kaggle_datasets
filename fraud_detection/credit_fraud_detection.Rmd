@@ -19,29 +19,25 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
 ```{r}
 ## Importing libraries
-# set.seed(1)
+set.seed(1)
 library(dplyr)
 library(tidyverse)
 library(ggplot2)
+
+library(ROSE)
+library(corrplot)
+
 library(e1071)
 library(caret)
-
-library(corrplot)
-library(ROSE)
-
 library(rpart)
-library(randomForest)
+
 library(gmodels)
 library(glmnet)
-library(boot)
+
 library(MLmetrics)
-library(MLeval)
 require(MASS)
 library(Dict)
-library(purrr) # for functional programming (map)
-library(pROC) # for AUC calculations
-library(PRROC) # for Precision-Recall curve calculations
-library(ranger)
+library(PRROC)
 ```
 
 ```{r}
@@ -407,7 +403,7 @@ PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
 plot(PRC)
 ```
 
-**Definition:** A Decision Tree is a supervised machine learning algorithm building an actual tree based on splits within the data. [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
+**Definition:** A Decision Tree is a supervised machine learning algorithm building an actual tree based on splits within the data [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
 ```{r}
 tree_model <- train(form=Class~., data = train,

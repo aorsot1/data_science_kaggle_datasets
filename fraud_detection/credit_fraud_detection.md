@@ -29,7 +29,7 @@ user-friendly.
 
 ``` r
 ## Importing libraries
-# set.seed(1)
+set.seed(1)
 library(dplyr)
 ```
 
@@ -61,6 +61,19 @@ library(tidyverse)
 
 ``` r
 library(ggplot2)
+
+library(ROSE)
+```
+
+    ## Loaded ROSE 0.0-4
+
+``` r
+library(corrplot)
+```
+
+    ## corrplot 0.92 loaded
+
+``` r
 library(e1071)
 library(caret)
 ```
@@ -75,38 +88,8 @@ library(caret)
     ##     lift
 
 ``` r
-library(corrplot)
-```
-
-    ## corrplot 0.92 loaded
-
-``` r
-library(ROSE)
-```
-
-    ## Loaded ROSE 0.0-4
-
-``` r
 library(rpart)
-library(randomForest)
-```
 
-    ## randomForest 4.7-1
-
-    ## Type rfNews() to see new features/changes/bug fixes.
-
-    ## 
-    ## Attaching package: 'randomForest'
-
-    ## The following object is masked from 'package:ggplot2':
-    ## 
-    ##     margin
-
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     combine
-
-``` r
 library(gmodels)
 library(glmnet)
 ```
@@ -121,17 +104,6 @@ library(glmnet)
     ##     expand, pack, unpack
 
     ## Loaded glmnet 4.1-3
-
-``` r
-library(boot)
-```
-
-    ## 
-    ## Attaching package: 'boot'
-
-    ## The following object is masked from 'package:lattice':
-    ## 
-    ##     melanoma
 
 ``` r
 library(MLmetrics)
@@ -149,7 +121,6 @@ library(MLmetrics)
     ##     Recall
 
 ``` r
-library(MLeval)
 require(MASS)
 ```
 
@@ -164,25 +135,7 @@ require(MASS)
 
 ``` r
 library(Dict)
-library(purrr) # for functional programming (map)
-library(pROC) # for AUC calculations
-```
-
-    ## Type 'citation("pROC")' for a citation.
-
-    ## 
-    ## Attaching package: 'pROC'
-
-    ## The following object is masked from 'package:gmodels':
-    ## 
-    ##     ci
-
-    ## The following objects are masked from 'package:stats':
-    ## 
-    ##     cov, smooth, var
-
-``` r
-library(PRROC) # for Precision-Recall curve calculations
+library(PRROC)
 ```
 
     ## 
@@ -191,17 +144,6 @@ library(PRROC) # for Precision-Recall curve calculations
     ## The following object is masked from 'package:ROSE':
     ## 
     ##     roc.curve
-
-``` r
-library(ranger)
-```
-
-    ## 
-    ## Attaching package: 'ranger'
-
-    ## The following object is masked from 'package:randomForest':
-    ## 
-    ##     importance
 
 ``` r
 ## Loading dataset
@@ -20192,7 +20134,7 @@ plot(PRC)
 ![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
 
 **Definition:** A Decision Tree is a supervised machine learning
-algorithm building an actual tree based on splits within the data.
+algorithm building an actual tree based on splits within the data
 [here](https://www.xoriant.com/blog/product-engineering/decision-trees-machine-learning-algorithm.html).
 
 ``` r
