@@ -1,7 +1,7 @@
 fraud_detection
 ================
 Akoua Orsot
-2/23/2022
+03/03/2022
 
 -   [Fraud Detection](#fraud-detection)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -14,8 +14,8 @@ Akoua Orsot
     -   [8. Dimensionality Reduction](#8-dimensionality-reduction)
     -   [9. Machine Learning - Simple
         Models](#9-machine-learning---simple-models)
--   [10. Machine Learning - Ensemble
-    Methods](#10-machine-learning---ensemble-methods)
+    -   [10. Model Performance
+        Evaluation](#10-model-performance-evaluation)
 
 # Fraud Detection
 
@@ -88,6 +88,25 @@ library(ROSE)
 
 ``` r
 library(rpart)
+library(randomForest)
+```
+
+    ## randomForest 4.7-1
+
+    ## Type rfNews() to see new features/changes/bug fixes.
+
+    ## 
+    ## Attaching package: 'randomForest'
+
+    ## The following object is masked from 'package:ggplot2':
+    ## 
+    ##     margin
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     combine
+
+``` r
 library(gmodels)
 library(glmnet)
 ```
@@ -176,6 +195,13 @@ library(PRROC) # for Precision-Recall curve calculations
 ``` r
 library(ranger)
 ```
+
+    ## 
+    ## Attaching package: 'ranger'
+
+    ## The following object is masked from 'package:randomForest':
+    ## 
+    ##     importance
 
 ``` r
 ## Loading dataset
@@ -20183,55 +20209,36 @@ plot(PRC)
 
 ![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-33-1.png)<!-- -->
 
-**Definition:** Stochastic Gradient Descent is an iterative algorithm
-that minimizes the model’s error rate. Further information
-[here](https://towardsdatascience.com/stochastic-gradient-descent-clearly-explained-53d239905d31).
-
-``` r
-# model <- train(form=Class~., data = train,
-#                method="gbm", verbose = FALSE,
-#                trControl=kfold_cv, tuneLength=3)
-# 
-# preds <- predict(model, train, type="prob")[,2] #prob of positive class
-# preds_pos <- preds[train[,6]==1] #preds for true positive class
-# preds_neg <- preds[train[,6]==0] #preds for true negative class
-# 
-# PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
-# plot(PRC)
-```
-
 **Takeaway:** Our best model is the Logistic regression at 96.2% AUPRC.
 
-# 10. Machine Learning - Ensemble Methods
+## 10. Model Performance Evaluation
 
-This section will extend our work in machine learning to incorporate
-ensemble methods. We generated simple models and compared the scores,
-which appear satisfactory, with the lowest at 0.974 for the Average
-Precision Score. However, we may want more stability and minor variation
-in our predictive algorithm; it is where ensemble techniques come in.
-Most often, they act as a ‘superposer’ of multiple models throughout
-various ways and thus, bolster their predictive power. Further
-Information
-[here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+This section will build on everything we’ve done throughout this
+notebook and evaluate the best model using AUPRC.
 
-**Definition:** Random Forest builds onto the logic of decision trees by
-agglomerating multiple trees and obtaining a given prediction from
-majority voting; in other words, it is a Decision Tree times n (number
-of trees). Further information
-[here](https://towardsdatascience.com/understanding-random-forest-58381e0602d2).
+**Definition:** AUPRC (Area Under the Precision-Recall Curve) focuses on
+finding the positive examples; in other words, the fraudulent
+transactions in our case. Further information
+[here](https://glassboxmedicine.com/2019/03/02/measuring-performance-auprc/).
 
 ``` r
-# mtry <- sqrt(ncol(train))
-# tunegrid <- expand.grid(mtry=mtry)
-# rf_model <- train(form=Class~., data = train,
-#                method="rf", verbose = FALSE,
-#                trControl=kfold_cv, tuneGrid=tunegrid,
-#                tuneLength=3)
-# 
-# preds <- predict(rf_model, train, type="prob")[,2] #prob of positive class
-# preds_pos <- preds[train[,6]==1] #preds for true positive class
-# preds_neg <- preds[train[,6]==0] #preds for true negative class
-# 
-# PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
-# plot(PRC)
+logreg_model <- train(form=Class~., data = train,
+               method="glm", family="binomial",
+               trControl=kfold_cv, tuneLength=3)
 ```
+
+    ## Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
+
+``` r
+preds <- predict(logreg_model, test, type="prob")[,2] #prob of positive class
+preds_pos <- preds[test[,6]==1] #preds for true positive class
+preds_neg <- preds[test[,6]==0] #preds for true negative class
+
+PRC <- pr.curve(preds_pos, preds_neg, curve=TRUE)
+plot(PRC)
+```
+
+![](credit_fraud_detection_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+
+**Conclusion:** Given its simple implementation and recurrent high
+performance, we will present the Logistic Regression as our final model.
