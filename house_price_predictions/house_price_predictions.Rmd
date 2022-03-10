@@ -1,0 +1,78 @@
+---
+title: "house_price_prediction"
+author: "Akoua Orsot"
+date: "03/10/2022"
+output:
+  github_document:
+    toc: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# **House Price Predictions**
+
+Different variables come into play in appraising a house, such as the number of bedrooms, square footage, location, and much more. So, our task here is to build a machine learning model to make reasonably accurate predictions in terms of pricing houses. It would be an opportunity for those in real estate to gain more visibility on the market as a whole. In doing so, this notebook will offer a user-friendly explanation through every step using LIME (Local Interpretable Model-agnostic Explanations) principles.
+
+## 1. Environment Set-up
+
+```{r}
+## Importing libraries
+set.seed(1)
+library(dplyr)
+library(tidyverse)
+library(ggplot2)
+library(VIM)        # Visualize mising values
+library(mice)          # missing data imputation
+
+library(corrplot)
+```
+
+```{r}
+## Loading dataset
+df <- read_csv(file = 'C:/Users/Akoua Orsot/Desktop/ds_projects_data/house_prices/train.csv')
+df %>% head()
+```
+
+## 2. Initial Diagnostics
+
+```{r}
+## Info
+df %>% str()
+```
+
+**Takeaway:** From the glimpse above, we could already draw some observations.
+
+-   Our dataset comprises 1460 rows and 80 columns, making it relatively small, so we would not expect the training process o to be as computationally intensive.
+
+-   For null values, most columns appear to have no missing values, while null values make up 80% for some of those variables. It indicates that we shall proceed with data cleaning and tidying before doing any statistical analysis or machine learning.
+
+-   In terms of variable type, we have mostly int64, float64, and object. Though 'object' can indicate text or categorical, we will need to investigate further in feature engineering.
+
+```{r}
+## Descriptive Statistics
+df %>% summary()
+```
+
+**Takeaway:** For all 80 variables, the table above captures the basic descriptive statistics showing things like mean, standard deviation, min, max, etc. Commenting on each variable would bring little value to our overall analysis, and so we will zoom on the target variable 'SalePrice'.
+
+```{r}
+# Stats for the target variable
+df$SalePrice %>% summary()
+```
+
+**Takeaway:** The count indicates no null values in the column. The houses in the dataset vary from \~USD34.9k to \~USD755k, with a mean value of \~USD180k. With the standard deviation at \~USD79k, it appears that prices fluctuate pretty significantly, or we may potentially have houses with exorbitant prices (outliers) skewing the data. We will create a histogram to look at the distribution more closely.
+
+```{r}
+## Feature Variable Analysis
+df %>% 
+    ggplot(aes(x=SalePrice)) + 
+    geom_histogram(bins = 50) +
+    labs(title = "Distribution of House Sale Price",
+          x = "Dollar Amount ($)", y = "Frequency (Count)")
+```
+
+**Takeaway:** From the histogram above, we can deduct that house sale prices in this dataset have a right-skewed distribution with outliers on the upper end, indicating luxury houses with higher price points. However, most houses appear to fall between \~USD100k and \~USD300k, relatively consistent with real estate markets in the United States.
+
+## 3. Data Cleaning
