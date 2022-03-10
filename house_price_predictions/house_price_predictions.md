@@ -535,3 +535,155 @@ However, most houses appear to fall between \~USD100k and \~USD300k,
 relatively consistent with real estate markets in the United States.
 
 ## 3. Data Cleaning
+
+``` r
+missvalues_visual <- 
+    df  %>%
+      summarise_all(list(~is.na(.)))%>%
+      pivot_longer(everything(),
+                   names_to = "variables", values_to="missing") %>%
+      count(variables, missing) %>%
+      ggplot(aes(y=variables,x=n,fill=missing))+
+      geom_col()+
+      scale_fill_manual(values=c("skyblue3","gold"))+
+      theme(axis.title.y=element_blank())
+missvalues_visual
+```
+
+![](house_price_predictions_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+
+``` r
+options(repr.plot.width = 14, repr.plot.height = 5)
+```
+
+**Takeaway:** As the plot shows above, there are indeed null values
+confirming our observation in the initial diagnostics. Given that not
+all variables are of the same type or the same proportion of missing
+values, the cleaning process will attend to each column or group of
+similar columns.
+
+``` r
+## No. of null values
+null_vals <- sum(is.na(df))
+
+# List of columns with missing values
+null_cols <- which(colSums(is.na(df))>0)
+
+# Reporting back
+sprintf(fmt="We are missing %d values in our data at given percentages in the following columns:\n",
+       null_vals) %>% cat()
+```
+
+    ## We are missing 6965 values in our data at given percentages in the following columns:
+
+``` r
+for (i in null_cols)
+    {
+    col_name <- names(df[, i])
+    null_val <- sum(is.na(df[col_name]))
+    null_per <- (null_val / nrow(df))*100
+    sprintf(fmt = " -%s: %d (%.2f%%)\n", 
+            col_name, null_val, null_per) %>% cat()
+}
+```
+
+    ##  -LotFrontage: 259 (17.74%)
+    ##  -Alley: 1369 (93.77%)
+    ##  -MasVnrType: 8 (0.55%)
+    ##  -MasVnrArea: 8 (0.55%)
+    ##  -BsmtQual: 37 (2.53%)
+    ##  -BsmtCond: 37 (2.53%)
+    ##  -BsmtExposure: 38 (2.60%)
+    ##  -BsmtFinType1: 37 (2.53%)
+    ##  -BsmtFinType2: 38 (2.60%)
+    ##  -Electrical: 1 (0.07%)
+    ##  -FireplaceQu: 690 (47.26%)
+    ##  -GarageType: 81 (5.55%)
+    ##  -GarageYrBlt: 81 (5.55%)
+    ##  -GarageFinish: 81 (5.55%)
+    ##  -GarageQual: 81 (5.55%)
+    ##  -GarageCond: 81 (5.55%)
+    ##  -PoolQC: 1453 (99.52%)
+    ##  -Fence: 1179 (80.75%)
+    ##  -MiscFeature: 1406 (96.30%)
+
+**Variable 1:** As per the data dictionary, ‘LotFrontage’ is the linear
+feet of street connected to property. It indicates the measurement of a
+piece of land (lot) often defined by frontage and depth respectively.
+For instance, an house can be 50 by 150, meaning 50 feet wide (frontage)
+and 150 feet long. Read more about it
+[here](https://www.gimme-shelter.com/frontage-50043/). Given that
+‘LotFrontage’ is one of those characteristics all houses have, the null
+values indicate missing information that cannot just be equal to 0.
+Since we cannot get back and fetch more data, we will use imputation
+methods for this column and other ones which may require them.
+
+**Definition:** When it comes to data science, we are constantly dealing
+with imperfect information, thus murking the waters on the quality of
+data overall. One of those issues is the recurrence of missing values
+and requires effective techniques to deal with them. Imputation methods
+present such an opportunity using strategies to replace null values with
+statistical measures like mean, mode, or median. More information
+[here](https://machinelearningmastery.com/statistical-imputation-for-missing-values-in-machine-learning/).
+
+**Note:** Before proceeding to the imputation, we would like to
+investigate possible differences in distribution grouped by Lot shape.
+
+``` r
+df %>% 
+    ggplot(aes(x=LotFrontage)) +
+    geom_boxplot(outlier.colour="red", outlier.shape=16,
+     outlier.size=2) 
+```
+
+    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
+
+![](house_price_predictions_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
+
+``` r
+df %>% 
+    ggplot(aes(x=LotFrontage, y=LotShape)) +
+    geom_boxplot(outlier.colour="red", outlier.shape=16,
+     outlier.size=2) +
+    facet_wrap("LotShape")
+```
+
+    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
+
+![](house_price_predictions_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
+
+``` r
+sprintf(fmt = "For all houses' LotFrontage, the mean is %.2f and median is %.2f",
+        mean(df$LotFrontage, na.rm=TRUE), median(df$LotFrontage, na.rm=TRUE)) %>% cat()
+```
+
+    ## For all houses' LotFrontage, the mean is 70.05 and median is 69.00
+
+``` r
+sprintf("For: \n") %>% cat()
+```
+
+    ## For:
+
+``` r
+for (i in unique(df$LotShape))
+    {
+    df_i <- df %>% filter(LotShape==i)
+    sprintf(
+            fmt = " -%s houses, the mean LotFrontage is %.2f and median LotFrontage is %.2f\n",
+            i, mean(df_i$LotFrontage, na.rm=TRUE), median(df_i$LotFrontage, na.rm=TRUE)
+            ) %>% cat()
+}
+```
+
+    ##  -Reg houses, the mean LotFrontage is 67.04 and median LotFrontage is 67.00
+    ##  -IR1 houses, the mean LotFrontage is 76.09 and median LotFrontage is 74.00
+    ##  -IR2 houses, the mean LotFrontage is 76.50 and median LotFrontage is 57.50
+    ##  -IR3 houses, the mean LotFrontage is 138.43 and median LotFrontage is 150.00
+
+**Takeaway:** The boxplots indicate the presence of outliers in the data
+with massive and small houses by widths. When broken down by ‘LotShape’,
+we also observe a notable difference in those houses categorized as IR3,
+in other words, of very irregular shape. In light of both the outliers
+and category differences, we will use the median value grouped by
+LotShape for the imputation process to ensure consistency in the data.

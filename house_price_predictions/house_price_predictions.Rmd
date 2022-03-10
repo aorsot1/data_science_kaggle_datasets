@@ -76,3 +76,81 @@ df %>%
 **Takeaway:** From the histogram above, we can deduct that house sale prices in this dataset have a right-skewed distribution with outliers on the upper end, indicating luxury houses with higher price points. However, most houses appear to fall between \~USD100k and \~USD300k, relatively consistent with real estate markets in the United States.
 
 ## 3. Data Cleaning
+
+```{r}
+missvalues_visual <- 
+    df  %>%
+      summarise_all(list(~is.na(.)))%>%
+      pivot_longer(everything(),
+                   names_to = "variables", values_to="missing") %>%
+      count(variables, missing) %>%
+      ggplot(aes(y=variables,x=n,fill=missing))+
+      geom_col()+
+      scale_fill_manual(values=c("skyblue3","gold"))+
+      theme(axis.title.y=element_blank())
+missvalues_visual
+options(repr.plot.width = 14, repr.plot.height = 5)
+```
+
+**Takeaway:** As the plot shows above, there are indeed null values confirming our observation in the initial diagnostics. Given that not all variables are of the same type or the same proportion of missing values, the cleaning process will attend to each column or group of similar columns.
+
+```{r}
+## No. of null values
+null_vals <- sum(is.na(df))
+
+# List of columns with missing values
+null_cols <- which(colSums(is.na(df))>0)
+
+# Reporting back
+sprintf(fmt="We are missing %d values in our data at given percentages in the following columns:\n",
+       null_vals) %>% cat()
+
+for (i in null_cols)
+    {
+    col_name <- names(df[, i])
+    null_val <- sum(is.na(df[col_name]))
+    null_per <- (null_val / nrow(df))*100
+    sprintf(fmt = " -%s: %d (%.2f%%)\n", 
+            col_name, null_val, null_per) %>% cat()
+}
+```
+
+**Variable 1:** As per the data dictionary, 'LotFrontage' is the linear feet of street connected to property. It indicates the measurement of a piece of land (lot) often defined by frontage and depth respectively. For instance, an house can be 50 by 150, meaning 50 feet wide (frontage) and 150 feet long. Read more about it [here](https://www.gimme-shelter.com/frontage-50043/). Given that 'LotFrontage' is one of those characteristics all houses have, the null values indicate missing information that cannot just be equal to 0. Since we cannot get back and fetch more data, we will use imputation methods for this column and other ones which may require them.
+
+**Definition:** When it comes to data science, we are constantly dealing with imperfect information, thus murking the waters on the quality of data overall. One of those issues is the recurrence of missing values and requires effective techniques to deal with them. Imputation methods present such an opportunity using strategies to replace null values with statistical measures like mean, mode, or median. More information [here](https://machinelearningmastery.com/statistical-imputation-for-missing-values-in-machine-learning/).
+
+**Note:** Before proceeding to the imputation, we would like to investigate possible differences in distribution grouped by Lot shape.
+
+```{r}
+df %>% 
+    ggplot(aes(x=LotFrontage)) +
+    geom_boxplot(outlier.colour="red", outlier.shape=16,
+     outlier.size=2) 
+```
+
+```{r}
+df %>% 
+    ggplot(aes(x=LotFrontage, y=LotShape)) +
+    geom_boxplot(outlier.colour="red", outlier.shape=16,
+     outlier.size=2) +
+    facet_wrap("LotShape")
+```
+
+```{r}
+sprintf(fmt = "For all houses' LotFrontage, the mean is %.2f and median is %.2f",
+        mean(df$LotFrontage, na.rm=TRUE), median(df$LotFrontage, na.rm=TRUE)) %>% cat()
+```
+
+```{r}
+sprintf("For: \n") %>% cat()
+for (i in unique(df$LotShape))
+    {
+    df_i <- df %>% filter(LotShape==i)
+    sprintf(
+            fmt = " -%s houses, the mean LotFrontage is %.2f and median LotFrontage is %.2f\n",
+            i, mean(df_i$LotFrontage, na.rm=TRUE), median(df_i$LotFrontage, na.rm=TRUE)
+            ) %>% cat()
+}
+```
+
+**Takeaway:** The boxplots indicate the presence of outliers in the data with massive and small houses by widths. When broken down by 'LotShape', we also observe a notable difference in those houses categorized as IR3, in other words, of very irregular shape. In light of both the outliers and category differences, we will use the median value grouped by LotShape for the imputation process to ensure consistency in the data.
