@@ -1,7 +1,7 @@
 house_price_prediction
 ================
 Akoua Orsot
-03/10/2022
+03/13/2022
 
 -   [**House Price Predictions**](#house-price-predictions)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -39,6 +39,7 @@ library(dplyr)
     ##     intersect, setdiff, setequal, union
 
 ``` r
+library(tidyr)
 library(tidyverse)
 ```
 
@@ -46,8 +47,7 @@ library(tidyverse)
 
     ## v ggplot2 3.3.5     v purrr   0.3.4
     ## v tibble  3.1.5     v stringr 1.4.0
-    ## v tidyr   1.2.0     v forcats 0.5.1
-    ## v readr   2.1.2
+    ## v readr   2.1.2     v forcats 0.5.1
 
     ## -- Conflicts ------------------------------------------ tidyverse_conflicts() --
     ## x dplyr::filter() masks stats::filter()
@@ -89,10 +89,14 @@ library(mice)          # missing data imputation
     ##     cbind, rbind
 
 ``` r
-library(corrplot)
+library(naniar)
 ```
 
-    ## corrplot 0.92 loaded
+    ## Warning: package 'naniar' was built under R version 4.1.3
+
+``` r
+library(stringr)
+```
 
 ``` r
 ## Loading dataset
@@ -687,3 +691,173 @@ we also observe a notable difference in those houses categorized as IR3,
 in other words, of very irregular shape. In light of both the outliers
 and category differences, we will use the median value grouped by
 LotShape for the imputation process to ensure consistency in the data.
+
+``` r
+df <- df %>% 
+  group_by(LotShape) %>% 
+  mutate(LotFrontage = ifelse(is.na(LotFrontage), 
+                            median(LotFrontage, na.rm = TRUE), 
+                            LotFrontage))
+
+df$LotFrontage %>% is.na() %>% sum()
+```
+
+    ## [1] 0
+
+\*\*  
+Alley:\*\* As per the data dictionary, it refers to the type of alley
+access to property. Given the real estate market in question, it may
+affect the price more or less and so, the null values are indeed
+significant with NA indicating that there isn’t one. To ensure that it
+is taken into account, we will rename the NA into the full phrase ‘No
+alley access’ and then proceed in encoding this categorical variable.
+
+``` r
+df$Alley <- df$Alley %>% replace_na('No alley access')
+df$Alley %>% is.na() %>% sum()
+```
+
+    ## [1] 0
+
+**Variable Grouping:** It appears that the process in detecting missing
+valuies actually led to understanding those null values are actually
+categories significant or equal to 0 per the data dictionary. So, to be
+more efficient, we will make a list of those columns and the term/value
+we’ll use to replace the na values.
+
+``` r
+for (i in names(df[, null_cols])) {
+    # Grouping of variables dependent on the presence of a basement
+    if (str_detect(i, "Bsmt") == TRUE) {
+        df[, i][is.na(df[, i])] <- 'No Basement'
+        
+    # Grouping of variables dependent on the presence of a garage
+    } else if (str_detect(i, "Garage") == TRUE) {
+        if (i == 'GarageYrBlt'){
+            df[, i][is.na(df[, i])] <- 0
+        } else {
+            df[, i][is.na(df[, i])] <- 'No Garage'
+        }
+        
+    }
+}
+```
+
+``` r
+# Grouping of variables dependent on the presence of other amenities
+df$MasVnrType  <- df$MasVnrType %>% replace_na('No Veneer')
+df$MasVnrArea  <- df$MasVnrArea %>% replace_na(0)
+df$FireplaceQu <- df$FireplaceQu %>% replace_na('No Fireplace')
+df$PoolQC <- df$PoolQC %>% replace_na('No Pool')
+df$Fence <- df$Fence %>% replace_na('No Fence')
+df$MiscFeature <- df$MiscFeature %>% replace_na('No Misc')
+```
+
+**Note:** Assuming all houses have an electrical system, we will drop
+the obersvation having the eltrical system as a null values.
+
+``` r
+# Deleting the Electrical 
+df <- drop_na(df, any_of("Electrical"))
+```
+
+``` r
+## No. of null values
+null_vals <- df %>% is.na() %>% sum()
+
+# Reporting back
+sprintf(fmt="Afer imputation, we have missing %d values in our data.",
+        null_vals) %>% cat()
+```
+
+    ## Afer imputation, we have missing 0 values in our data.
+
+**Feature Scaling:** When dealing with data, we are working with
+different types of which required adpated pre-processing before applying
+any machine learning techniques. In our content, we perform feature
+scaling to standardize only the values in continuous numerical
+variables. Read more
+[here](https://towardsdatascience.com/all-about-feature-scaling-bcc0ad75cb35).
+
+``` r
+# Filter numeric columns
+num_vars = c('LotFrontage', 'LotArea', 'MasVnrArea', 'BsmtFinSF1',
+           'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
+           'LowQualFinSF', 'GrLivArea', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF',
+            'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal')
+
+df[, num_vars] <- scale(df[, num_vars], center=TRUE, scale=TRUE)
+df %>% head()
+```
+
+    ## # A tibble: 6 x 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFrontage LotArea Street Alley           LotShape
+    ##   <dbl>      <dbl> <chr>          <dbl>   <dbl> <chr>  <chr>           <chr>   
+    ## 1     1         60 RL            -0.240 -0.207  Pave   No alley access Reg     
+    ## 2     2         20 RL             0.429 -0.0919 Pave   No alley access Reg     
+    ## 3     3         60 RL            -0.106  0.0734 Pave   No alley access IR1     
+    ## 4     4         70 RL            -0.463 -0.0969 Pave   No alley access IR1     
+    ## 5     5         60 RL             0.608  0.375  Pave   No alley access IR1     
+    ## 6     6         50 RL             0.652  0.360  Pave   No alley access IR1     
+    ## # ... with 73 more variables: LandContour <chr>, Utilities <chr>,
+    ## #   LotConfig <chr>, LandSlope <chr>, Neighborhood <chr>, Condition1 <chr>,
+    ## #   Condition2 <chr>, BldgType <chr>, HouseStyle <chr>, OverallQual <dbl>,
+    ## #   OverallCond <dbl>, YearBuilt <dbl>, YearRemodAdd <dbl>, RoofStyle <chr>,
+    ## #   RoofMatl <chr>, Exterior1st <chr>, Exterior2nd <chr>, MasVnrType <chr>,
+    ## #   MasVnrArea <dbl>, ExterQual <chr>, ExterCond <chr>, Foundation <chr>,
+    ## #   BsmtQual <chr>, BsmtCond <chr>, BsmtExposure <chr>, BsmtFinType1 <chr>, ...
+
+**Categorical feature encoding** ensures that variables with
+categories/groupings are transformed into numerical inputs for the
+predictive modeling phase. The categorical variables are also subdivided
+as:
+
+-   binary (two possible outcomes)
+
+-   cardinal (no meaningful order)
+
+-   ordinal (meaningful order)
+
+Read more
+[here](https://www.analyticsvidhya.com/blog/2020/08/types-of-categorical-data-encoding/).
+
+``` r
+# List of nominal categorical variables
+cat_vars = c('CentralAir', 'MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotConfig', 
+            'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 
+            'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 
+            'Exterior2nd', 'MasVnrType', 'Foundation', 'Electrical', 
+            'Functional', 'GarageType', 'MiscFeature', 'SaleType', 
+            'SaleCondition', 'LotShape', 'LandContour', 'Utilities', 
+            'LandSlope', 'OverallQual', 'OverallCond', 'ExterQual',
+            'ExterCond', 'BsmtQual', 'BsmtCond', 'BsmtExposure',
+            'BsmtFinType1', 'BsmtFinType2', 'HeatingQC', 'KitchenQual',
+            'FireplaceQu', 'GarageFinish', 'GarageQual', 'GarageCond',
+            'PavedDrive', 'PoolQC', 'Fence')
+
+df[cat_vars] <- lapply(df[cat_vars], factor)
+df %>% head()
+```
+
+    ## # A tibble: 6 x 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFrontage LotArea Street Alley           LotShape
+    ##   <dbl> <fct>      <fct>          <dbl>   <dbl> <fct>  <fct>           <fct>   
+    ## 1     1 60         RL            -0.240 -0.207  Pave   No alley access Reg     
+    ## 2     2 20         RL             0.429 -0.0919 Pave   No alley access Reg     
+    ## 3     3 60         RL            -0.106  0.0734 Pave   No alley access IR1     
+    ## 4     4 70         RL            -0.463 -0.0969 Pave   No alley access IR1     
+    ## 5     5 60         RL             0.608  0.375  Pave   No alley access IR1     
+    ## 6     6 50         RL             0.652  0.360  Pave   No alley access IR1     
+    ## # ... with 73 more variables: LandContour <fct>, Utilities <fct>,
+    ## #   LotConfig <fct>, LandSlope <fct>, Neighborhood <fct>, Condition1 <fct>,
+    ## #   Condition2 <fct>, BldgType <fct>, HouseStyle <fct>, OverallQual <fct>,
+    ## #   OverallCond <fct>, YearBuilt <dbl>, YearRemodAdd <dbl>, RoofStyle <fct>,
+    ## #   RoofMatl <fct>, Exterior1st <fct>, Exterior2nd <fct>, MasVnrType <fct>,
+    ## #   MasVnrArea <dbl>, ExterQual <fct>, ExterCond <fct>, Foundation <fct>,
+    ## #   BsmtQual <fct>, BsmtCond <fct>, BsmtExposure <fct>, BsmtFinType1 <fct>, ...
+
+**Datetime Variables:** There are variables denoting dates and thus, may
+hold significance and impact our target variable: the house’s sale
+price.
