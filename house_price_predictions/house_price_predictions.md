@@ -919,7 +919,7 @@ df %>% head()
     ## #   BsmtQual <fct>, BsmtCond <fct>, BsmtExposure <fct>, BsmtFinType1 <fct>, ...
 
 ``` r
-# List of nominal categorical variables
+# List of date categorical variables
 cat_vars = c('YearRemodAdd', 'YearBuilt', 'MoSold', 'YrSold')
 
 df[cat_vars] <- lapply(df[cat_vars], factor)
