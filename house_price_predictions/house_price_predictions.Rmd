@@ -1,7 +1,7 @@
 ---
 title: "house_price_prediction"
 author: "Akoua Orsot"
-date: "03/13/2022"
+date: "03/21/2022"
 output:
   github_document:
     toc: true
@@ -167,8 +167,8 @@ df <- df %>%
 df$LotFrontage %>% is.na() %>% sum()
 ```
 
-**  
-Alley:** As per the data dictionary, it refers to the type of alley access to property. Given the real estate market in question, it may affect the price more or less and so, the null values are indeed significant with NA indicating that there isn't one. To ensure that it is taken into account, we will rename the NA into the full phrase 'No alley access' and then proceed in encoding this categorical variable.
+\*\*  
+Alley:\*\* As per the data dictionary, it refers to the type of alley access to property. Given the real estate market in question, it may affect the price more or less and so, the null values are indeed significant with NA indicating that there isn't one. To ensure that it is taken into account, we will rename the NA into the full phrase 'No alley access' and then proceed in encoding this categorical variable.
 
 ```{r}
 df$Alley <- df$Alley %>% replace_na('No alley access')
@@ -245,7 +245,7 @@ df %>% head()
 Read more [here](https://www.analyticsvidhya.com/blog/2020/08/types-of-categorical-data-encoding/).
 
 ```{r}
-# List of nominal categorical variables
+# List of ordinal categorical variables
 cat_vars = c('CentralAir', 'MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotConfig', 
             'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 
             'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 
@@ -264,3 +264,31 @@ df %>% head()
 
 **Datetime Variables:** There are variables denoting dates and thus, may hold significance and impact our target variable: the house's sale price.
 
+Based on research, we thought that the most sensible option would be to transform the datetime variables into ordinal categories in twofold:
+
+-   Direct encoding of 'MoSold' and 'YrSold' having 12 and 5 pre-defined categories that are the 12 months and 5 years respectively during which the houses in the dataset were sold.
+
+-   Binning of 'YearRemodAdd' and 'YearBuilt' into 6 categories of 10 and 20 years of interval respectively before proceeding to ordinal encoding as well.
+
+```{r}
+df <- df %>% 
+        mutate(YearRemodAdd = cut(YearRemodAdd, breaks=6),
+               YearBuilt = cut(YearBuilt, breaks=6))
+df %>% head()
+```
+
+```{r}
+# List of nominal categorical variables
+cat_vars = c('YearRemodAdd', 'YearBuilt', 'MoSold', 'YrSold')
+
+df[cat_vars] <- lapply(df[cat_vars], factor)
+df %>% head()
+```
+
+# 4. Correlation Analysis
+
+**Note:** Given that we have 240 columns, it would be quite computationally intensive to display the entire correlation matrix and visualize it for user-friendly analysis. As a result, we will only filter out relatively and highly correlated relationship with coefficient between 0.7 and 1 (non-inclusive to avoid pairs of identical variables).
+
+```{r}
+
+```
