@@ -24,7 +24,8 @@ library(dplyr)
 library(tidyr)
 library(tidyverse)
 library(ggplot2)
-library(VIM)        # Visualize mising values
+library(ggcorrplot)    # Visualize correlation matrix
+library(VIM)           # Visualize mising values
 library(mice)          # missing data imputation
 library(naniar)
 library(stringr)
@@ -290,5 +291,6 @@ df %>% head()
 **Note:** Given that we have 240 columns, it would be quite computationally intensive to display the entire correlation matrix and visualize it for user-friendly analysis. As a result, we will only filter out relatively and highly correlated relationship with coefficient between 0.7 and 1 (non-inclusive to avoid pairs of identical variables).
 
 ```{r}
-
+df_num <- df[, sapply(df, class) == "numeric"]
+ggcorrplot(cor(df_num))
 ```

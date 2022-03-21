@@ -1,12 +1,13 @@
 house_price_prediction
 ================
 Akoua Orsot
-03/13/2022
+03/21/2022
 
 -   [**House Price Predictions**](#house-price-predictions)
     -   [1. Environment Set-up](#1-environment-set-up)
     -   [2. Initial Diagnostics](#2-initial-diagnostics)
     -   [3. Data Cleaning](#3-data-cleaning)
+-   [4. Correlation Analysis](#4-correlation-analysis)
 
 # **House Price Predictions**
 
@@ -55,7 +56,13 @@ library(tidyverse)
 
 ``` r
 library(ggplot2)
-library(VIM)        # Visualize mising values
+library(ggcorrplot)    # Visualize correlation matrix
+```
+
+    ## Warning: package 'ggcorrplot' was built under R version 4.1.3
+
+``` r
+library(VIM)           # Visualize mising values
 ```
 
     ## Loading required package: colorspace
@@ -823,7 +830,7 @@ Read more
 [here](https://www.analyticsvidhya.com/blog/2020/08/types-of-categorical-data-encoding/).
 
 ``` r
-# List of nominal categorical variables
+# List of ordinal categorical variables
 cat_vars = c('CentralAir', 'MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotConfig', 
             'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 
             'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 
@@ -861,3 +868,81 @@ df %>% head()
 **Datetime Variables:** There are variables denoting dates and thus, may
 hold significance and impact our target variable: the house’s sale
 price.
+
+Based on research, we thought that the most sensible option would be to
+transform the datetime variables into ordinal categories in twofold:
+
+-   Direct encoding of ‘MoSold’ and ‘YrSold’ having 12 and 5 pre-defined
+    categories that are the 12 months and 5 years respectively during
+    which the houses in the dataset were sold.
+
+-   Binning of ‘YearRemodAdd’ and ‘YearBuilt’ into 6 categories of 10
+    and 20 years of interval respectively before proceeding to ordinal
+    encoding as well.
+
+``` r
+df <- df %>% 
+        mutate(YearRemodAdd = cut(YearRemodAdd, breaks=6),
+               YearBuilt = cut(YearBuilt, breaks=6))
+df %>% head()
+```
+
+    ## # A tibble: 6 x 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFrontage LotArea Street Alley           LotShape
+    ##   <dbl> <fct>      <fct>          <dbl>   <dbl> <fct>  <fct>           <fct>   
+    ## 1     1 60         RL            -0.240 -0.207  Pave   No alley access Reg     
+    ## 2     2 20         RL             0.429 -0.0919 Pave   No alley access Reg     
+    ## 3     3 60         RL            -0.106  0.0734 Pave   No alley access IR1     
+    ## 4     4 70         RL            -0.463 -0.0969 Pave   No alley access IR1     
+    ## 5     5 60         RL             0.608  0.375  Pave   No alley access IR1     
+    ## 6     6 50         RL             0.652  0.360  Pave   No alley access IR1     
+    ## # ... with 73 more variables: LandContour <fct>, Utilities <fct>,
+    ## #   LotConfig <fct>, LandSlope <fct>, Neighborhood <fct>, Condition1 <fct>,
+    ## #   Condition2 <fct>, BldgType <fct>, HouseStyle <fct>, OverallQual <fct>,
+    ## #   OverallCond <fct>, YearBuilt <fct>, YearRemodAdd <fct>, RoofStyle <fct>,
+    ## #   RoofMatl <fct>, Exterior1st <fct>, Exterior2nd <fct>, MasVnrType <fct>,
+    ## #   MasVnrArea <dbl>, ExterQual <fct>, ExterCond <fct>, Foundation <fct>,
+    ## #   BsmtQual <fct>, BsmtCond <fct>, BsmtExposure <fct>, BsmtFinType1 <fct>, ...
+
+``` r
+# List of nominal categorical variables
+cat_vars = c('YearRemodAdd', 'YearBuilt', 'MoSold', 'YrSold')
+
+df[cat_vars] <- lapply(df[cat_vars], factor)
+df %>% head()
+```
+
+    ## # A tibble: 6 x 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFrontage LotArea Street Alley           LotShape
+    ##   <dbl> <fct>      <fct>          <dbl>   <dbl> <fct>  <fct>           <fct>   
+    ## 1     1 60         RL            -0.240 -0.207  Pave   No alley access Reg     
+    ## 2     2 20         RL             0.429 -0.0919 Pave   No alley access Reg     
+    ## 3     3 60         RL            -0.106  0.0734 Pave   No alley access IR1     
+    ## 4     4 70         RL            -0.463 -0.0969 Pave   No alley access IR1     
+    ## 5     5 60         RL             0.608  0.375  Pave   No alley access IR1     
+    ## 6     6 50         RL             0.652  0.360  Pave   No alley access IR1     
+    ## # ... with 73 more variables: LandContour <fct>, Utilities <fct>,
+    ## #   LotConfig <fct>, LandSlope <fct>, Neighborhood <fct>, Condition1 <fct>,
+    ## #   Condition2 <fct>, BldgType <fct>, HouseStyle <fct>, OverallQual <fct>,
+    ## #   OverallCond <fct>, YearBuilt <fct>, YearRemodAdd <fct>, RoofStyle <fct>,
+    ## #   RoofMatl <fct>, Exterior1st <fct>, Exterior2nd <fct>, MasVnrType <fct>,
+    ## #   MasVnrArea <dbl>, ExterQual <fct>, ExterCond <fct>, Foundation <fct>,
+    ## #   BsmtQual <fct>, BsmtCond <fct>, BsmtExposure <fct>, BsmtFinType1 <fct>, ...
+
+# 4. Correlation Analysis
+
+**Note:** Given that we have 240 columns, it would be quite
+computationally intensive to display the entire correlation matrix and
+visualize it for user-friendly analysis. As a result, we will only
+filter out relatively and highly correlated relationship with
+coefficient between 0.7 and 1 (non-inclusive to avoid pairs of identical
+variables).
+
+``` r
+df_num <- df[, sapply(df, class) == "numeric"]
+ggcorrplot(cor(df_num))
+```
+
+![](house_price_predictions_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
