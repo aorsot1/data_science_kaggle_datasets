@@ -62,6 +62,19 @@ library(ggcorrplot)    # Visualize correlation matrix
     ## Warning: package 'ggcorrplot' was built under R version 4.1.3
 
 ``` r
+library(caret)
+```
+
+    ## Loading required package: lattice
+
+    ## 
+    ## Attaching package: 'caret'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     lift
+
+``` r
 library(VIM)           # Visualize mising values
 ```
 
@@ -936,8 +949,8 @@ df %>% head()
 ``` r
 # Correlation matrix and plot
 df_num <- df[, sapply(df, class) == "numeric"]
-df_cor <- cor(df_num)
-ggcorrplot(df_cor, hc.order = TRUE, insig = "blank",
+cor <- cor(df_num)
+ggcorrplot(cor, hc.order = TRUE, insig = "blank",
            type = "lower", ggtheme = theme_gray,
            colors = c("#6D9EC1", "white", "#E46726"),
            tl.cex = 8)
@@ -948,3 +961,13 @@ ggcorrplot(df_cor, hc.order = TRUE, insig = "blank",
 **Note:** Next, we will only filter out relatively and highly correlated
 relationship with coefficient between 0.7 and 1 (non-inclusive to avoid
 pairs of identical variables).
+
+``` r
+findCorrelation(x=cor, cutoff = .7, names=TRUE)
+```
+
+    ## [1] "GrLivArea"  "1stFlrSF"   "GarageCars"
+
+``` r
+## Multicollinearity
+```
