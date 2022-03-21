@@ -933,16 +933,18 @@ df %>% head()
 
 # 4. Correlation Analysis
 
-**Note:** Given that we have 240 columns, it would be quite
-computationally intensive to display the entire correlation matrix and
-visualize it for user-friendly analysis. As a result, we will only
-filter out relatively and highly correlated relationship with
-coefficient between 0.7 and 1 (non-inclusive to avoid pairs of identical
-variables).
-
 ``` r
+# Correlation matrix and plot
 df_num <- df[, sapply(df, class) == "numeric"]
-ggcorrplot(cor(df_num))
+df_cor <- cor(df_num)
+ggcorrplot(df_cor, hc.order = TRUE, insig = "blank",
+           type = "lower", ggtheme = theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726"),
+           tl.cex = 8)
 ```
 
 ![](house_price_predictions_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+**Note:** Next, we will only filter out relatively and highly correlated
+relationship with coefficient between 0.7 and 1 (non-inclusive to avoid
+pairs of identical variables).
