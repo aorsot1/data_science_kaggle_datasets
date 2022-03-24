@@ -30,7 +30,11 @@ library(VIM)           # Visualize mising values
 library(mice)          # missing data imputation
 library(naniar)
 library(stringr)
+library(Metrics)
+library(car)
+defaultW <- getOption("warn") 
 
+options(warn = -1) 
 ```
 
 ```{r}
@@ -371,6 +375,30 @@ ggcorrplot(cor, hc.order = TRUE, insig = "blank",
 findCorrelation(x=cor, cutoff = .7, names=TRUE)
 ```
 
+## 7. Machine Learning Set-Up
+
+Under this section, we will explain the procedure of two main splitting approach to estimate our models' performance.
+
 ```{r}
-## Multicollinearity
+## Training Testing Split
+N <- nrow(df)
+trainingSize  <- round(N*0.7)
+trainingCases <- sample(N, trainingSize)
+train <- df[trainingCases,]
+test <- df[-trainingCases,]
 ```
+
+```{r}
+# K-Fold Cross Validation
+train.control <- trainControl(method = "cv", number = 10, verboseIter = FALSE)
+# Train the model
+model <- train(SalePrice ~., data = df, method = "lm",
+               trControl = train.control)
+
+# Making predictions
+pred <- predict(model, train)
+obs <- train$SalePrice
+rmse(obs, pred)
+```
+
+**Takeaway:** Based on the printout above, it will inform us about a multicollinearity issue we need to solve. So, before building any new model, we will test various techniques to solve it.

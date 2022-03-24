@@ -10,6 +10,7 @@ Akoua Orsot
     -   [4. Inquiry Exploration](#4-inquiry-exploration)
     -   [5. Feature Engineering](#5-feature-engineering)
 -   [4. Correlation Analysis](#4-correlation-analysis)
+    -   [7. Machine Learning Set-Up](#7-machine-learning-set-up)
 
 # **House Price Predictions**
 
@@ -118,6 +119,41 @@ library(naniar)
 
 ``` r
 library(stringr)
+library(Metrics)
+```
+
+    ## Warning: package 'Metrics' was built under R version 4.1.3
+
+    ## 
+    ## Attaching package: 'Metrics'
+
+    ## The following objects are masked from 'package:caret':
+    ## 
+    ##     precision, recall
+
+``` r
+library(car)
+```
+
+    ## Warning: package 'car' was built under R version 4.1.3
+
+    ## Loading required package: carData
+
+    ## 
+    ## Attaching package: 'car'
+
+    ## The following object is masked from 'package:purrr':
+    ## 
+    ##     some
+
+    ## The following object is masked from 'package:dplyr':
+    ## 
+    ##     recode
+
+``` r
+defaultW <- getOption("warn") 
+
+options(warn = -1) 
 ```
 
 ``` r
@@ -662,8 +698,6 @@ df %>%
      outlier.size=2) 
 ```
 
-    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
-
 ![](house_price_predictions_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
@@ -673,8 +707,6 @@ df %>%
      outlier.size=2) +
     facet_wrap("LotShape")
 ```
-
-    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
 
 ![](house_price_predictions_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
@@ -1067,6 +1099,35 @@ findCorrelation(x=cor, cutoff = .7, names=TRUE)
 
     ## [1] "GrLivArea"  "1stFlrSF"   "GarageCars"
 
+## 7. Machine Learning Set-Up
+
+Under this section, we will explain the procedure of two main splitting
+approach to estimate our models’ performance.
+
 ``` r
-## Multicollinearity
+## Training Testing Split
+N <- nrow(df)
+trainingSize  <- round(N*0.7)
+trainingCases <- sample(N, trainingSize)
+train <- df[trainingCases,]
+test <- df[-trainingCases,]
 ```
+
+``` r
+# K-Fold Cross Validation
+train.control <- trainControl(method = "cv", number = 10, verboseIter = FALSE)
+# Train the model
+model <- train(SalePrice ~., data = df, method = "lm",
+               trControl = train.control)
+
+# Making predictions
+pred <- predict(model, train)
+obs <- train$SalePrice
+rmse(obs, pred)
+```
+
+    ## [1] 19184.45
+
+**Takeaway:** Based on the printout above, it will inform us about a
+multicollinearity issue we need to solve. So, before building any new
+model, we will test various techniques to solve it.
