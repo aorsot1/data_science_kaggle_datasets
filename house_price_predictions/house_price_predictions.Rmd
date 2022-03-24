@@ -223,7 +223,73 @@ sprintf(fmt="Afer imputation, we have missing %d values in our data.",
         null_vals) %>% cat()
 ```
 
-**Feature Scaling:** When dealing with data, we are working with different types of which required adpated pre-processing before applying any machine learning techniques. In our content, we perform feature scaling to standardize only the values in continuous numerical variables. Read more [here](https://towardsdatascience.com/all-about-feature-scaling-bcc0ad75cb35).
+## 4. Inquiry Exploration
+
+In this section, we will generate various questions to further consolidate our understanding of the problem at hand. It will allow us to guide the machine learning process more attuned to the particular subject matter.
+
+**Question 1:** Do bigger houses always translate into higher prices?
+
+```{r}
+## Scatterplot between lotArea and SalePrice
+df %>% ggplot(aes(x=LotArea, y=SalePrice)) +
+  geom_point()
+```
+
+**Takeaway:** From the scatterplot above, there is very little evidence indicating that bigger houses are ultimiately pricier. As noted in the diagnostics, the 80 initial variables show how the house valuation process is multi-dimensional.
+
+**Question 2:** Where is the real estate hotspot?
+
+```{r}
+# Which neighborhood registers the most sales?
+total <- df %>% 
+            group_by(Neighborhood) %>%
+            summarise(count = n_distinct(SalePrice)) %>% 
+            arrange(desc(count)) %>%
+            mutate(percent = count / sum(count) * 100)
+            
+total[1,] 
+```
+
+```{r}
+# Which neighborhood registers the sales with the highest price tags?
+avg <- df %>% 
+            group_by(Neighborhood) %>%
+            summarise(avg = mean(SalePrice)) %>% 
+            arrange(desc(avg))
+            
+avg[1,] 
+```
+
+**Note:** As per the data dictionary, NAmes refers North Ames and NoRidge refers to Northridge both located in Iowa, US.
+
+**Question 3:** What miscellaneous feature add the most value?
+
+```{r}
+# Which miscellaneous feature is the most prevalent?
+misc <- df %>% 
+            group_by(MiscFeature) %>%
+            summarise(count = n_distinct(SalePrice)) %>% 
+            arrange(desc(count))
+            
+misc[2,] 
+```
+
+    For houses with miscellaneous features, Shed is the most prevalent in 46 houses.
+
+```{r}
+# Calculating the value added
+misc_rows <- df %>% filter(MiscFeature == 'Shed')
+avg_mon_val <- mean(misc_rows$MiscVal)
+per_sale <- mean(misc_rows$MiscVal/misc_rows$SalePrice)*100
+avg_mon_val
+per_sale
+```
+
+    Shed has on average $697.84 of monetary value making up 0.48% of the house sale price on average.
+
+## 5. Feature Engineering
+
+**Feature Scaling:** When dealing with data, we are working with different types of which required adapted pre-processing before applying any machine learning techniques. In our content, we perform feature scaling to standardize only the values in continuous numerical variables. Read more [here](https://towardsdatascience.com/all-about-feature-scaling-bcc0ad75cb35).
 
 ```{r}
 # Filter numeric columns
