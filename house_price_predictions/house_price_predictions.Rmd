@@ -32,9 +32,8 @@ library(naniar)
 library(stringr)
 library(Metrics)
 library(car)
-defaultW <- getOption("warn") 
-
-options(warn = -1) 
+library(rpart)
+library(rpart.plot)
 ```
 
 ```{r}
@@ -388,12 +387,13 @@ train <- df[trainingCases,]
 test <- df[-trainingCases,]
 ```
 
+## 8. Machine Learning - Simple Models
+
+This section will leverage the powerful sci-kit-learn package to build multiple models with little to no parameter tuning for comparison. We will only use the cross-validation error on our training dataset to avoid any data leakage.
+
 ```{r}
-# K-Fold Cross Validation
-train.control <- trainControl(method = "cv", number = 10, verboseIter = FALSE)
-# Train the model
-model <- train(SalePrice ~., data = df, method = "lm",
-               trControl = train.control)
+# Linear Regression
+model <- lm(SalePrice ~., data = train)
 
 # Making predictions
 pred <- predict(model, train)
@@ -401,4 +401,11 @@ obs <- train$SalePrice
 rmse(obs, pred)
 ```
 
-**Takeaway:** Based on the printout above, it will inform us about a multicollinearity issue we need to solve. So, before building any new model, we will test various techniques to solve it.
+```{r}
+model1 <- rpart(SalePrice ~., data = train, method  = "anova")
+
+# Making predictions
+pred <- predict(model1, train)
+obs <- train$SalePrice
+rmse(obs, pred)
+```

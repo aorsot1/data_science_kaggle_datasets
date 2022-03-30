@@ -11,6 +11,8 @@ Akoua Orsot
     -   [5. Feature Engineering](#5-feature-engineering)
 -   [4. Correlation Analysis](#4-correlation-analysis)
     -   [7. Machine Learning Set-Up](#7-machine-learning-set-up)
+    -   [8. Machine Learning - Simple
+        Models](#8-machine-learning---simple-models)
 
 # **House Price Predictions**
 
@@ -151,9 +153,8 @@ library(car)
     ##     recode
 
 ``` r
-defaultW <- getOption("warn") 
-
-options(warn = -1) 
+library(rpart)
+library(rpart.plot)
 ```
 
 ``` r
@@ -698,6 +699,8 @@ df %>%
      outlier.size=2) 
 ```
 
+    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
+
 ![](house_price_predictions_files/figure-gfm/unnamed-chunk-9-1.png)<!-- -->
 
 ``` r
@@ -707,6 +710,8 @@ df %>%
      outlier.size=2) +
     facet_wrap("LotShape")
 ```
+
+    ## Warning: Removed 259 rows containing non-finite values (stat_boxplot).
 
 ![](house_price_predictions_files/figure-gfm/unnamed-chunk-10-1.png)<!-- -->
 
@@ -1113,21 +1118,38 @@ train <- df[trainingCases,]
 test <- df[-trainingCases,]
 ```
 
+## 8. Machine Learning - Simple Models
+
+This section will leverage the powerful sci-kit-learn package to build
+multiple models with little to no parameter tuning for comparison. We
+will only use the cross-validation error on our training dataset to
+avoid any data leakage.
+
 ``` r
-# K-Fold Cross Validation
-train.control <- trainControl(method = "cv", number = 10, verboseIter = FALSE)
-# Train the model
-model <- train(SalePrice ~., data = df, method = "lm",
-               trControl = train.control)
+# Linear Regression
+model <- lm(SalePrice ~., data = train)
 
 # Making predictions
 pred <- predict(model, train)
+```
+
+    ## Warning in predict.lm(model, train): prediction from a rank-deficient fit may be
+    ## misleading
+
+``` r
 obs <- train$SalePrice
 rmse(obs, pred)
 ```
 
-    ## [1] 19184.45
+    ## [1] 17114.64
 
-**Takeaway:** Based on the printout above, it will inform us about a
-multicollinearity issue we need to solve. So, before building any new
-model, we will test various techniques to solve it.
+``` r
+model1 <- rpart(SalePrice ~., data = train, method  = "anova")
+
+# Making predictions
+pred <- predict(model1, train)
+obs <- train$SalePrice
+rmse(obs, pred)
+```
+
+    ## [1] 36749.39
