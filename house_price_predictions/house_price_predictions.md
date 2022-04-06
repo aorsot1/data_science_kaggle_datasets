@@ -1,7 +1,7 @@
 house_price_prediction
 ================
 Akoua Orsot
-03/24/2022
+04/06/2022
 
 -   [**House Price Predictions**](#house-price-predictions)
     -   [1. Environment Set-up](#1-environment-set-up)
@@ -155,7 +155,19 @@ library(car)
 ``` r
 library(rpart)
 library(rpart.plot)
+library(glmnet)
 ```
+
+    ## Loading required package: Matrix
+
+    ## 
+    ## Attaching package: 'Matrix'
+
+    ## The following objects are masked from 'package:tidyr':
+    ## 
+    ##     expand, pack, unpack
+
+    ## Loaded glmnet 4.1-3
 
 ``` r
 ## Loading dataset
@@ -1106,8 +1118,10 @@ findCorrelation(x=cor, cutoff = .7, names=TRUE)
 
 ## 7. Machine Learning Set-Up
 
-Under this section, we will explain the procedure of two main splitting
-approach to estimate our models’ performance.
+First off, we need to prepapre the data to feed the machine learning
+models. In doing so, we first separate the features and target variables
+and then proceed in creating train and testing set for model training
+and performance evaluation.
 
 ``` r
 ## Training Testing Split
@@ -1126,30 +1140,84 @@ will only use the cross-validation error on our training dataset to
 avoid any data leakage.
 
 ``` r
-# Linear Regression
-model <- lm(SalePrice ~., data = train)
-
-# Making predictions
-pred <- predict(model, train)
+# K-fold cross validation
+kfold_cv <- trainControl(method = "cv",  number = 5, 
+                        savePredictions = "all"
+                        )
 ```
 
-    ## Warning in predict.lm(model, train): prediction from a rank-deficient fit may be
-    ## misleading
+``` r
+# Defining the models
+linreg <- train(form=SalePrice~., data = train,
+               method="lm", trControl=kfold_cv, tuneLength=3)
+```
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+``` r
+pred <- predict(linreg, train)
+```
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
 
 ``` r
 obs <- train$SalePrice
-rmse(obs, pred)
+rmse(log(obs), log(pred))
 ```
 
-    ## [1] 17114.64
+    ## [1] 0.09560294
 
 ``` r
-model1 <- rpart(SalePrice ~., data = train, method  = "anova")
-
-# Making predictions
-pred <- predict(model1, train)
-obs <- train$SalePrice
-rmse(obs, pred)
+# Seperating features from target variable
+X_train <- data.matrix(subset(train, select = -c(SalePrice)))
+y_train <- train$SalePrice
 ```
 
-    ## [1] 36749.39
+``` r
+ridge <- cv.glmnet(x=X_train, y=y_train, alpha = 0)
+pred <- predict(ridge, X_train)
+obs <- train$SalePrice
+rmse(log(obs), log(pred))
+```
+
+    ## [1] 0.1482979
+
+``` r
+lasso <- cv.glmnet(x=X_train, y=y_train, alpha = 1)
+pred <- predict(lasso, X_train)
+obs <- train$SalePrice
+rmse(log(obs), log(pred))
+```
+
+    ## [1] 0.1705103
+
+``` r
+elnet <- cv.glmnet(x=X_train, y=y_train, alpha = 0.25)
+pred <- predict(elnet, X_train)
+obs <- train$SalePrice
+rmse(log(obs), log(pred))
+```
+
+    ## [1] 0.1624677
+
+``` r
+#tree <- train(form=SalePrice~., data = train,method="rpart", trControl=kfold_cv, tuneLength=3)
+
+#pred <- predict(tree, train)
+#obs <- train$SalePrice
+#rmse(log(obs), log(pred))
+```
