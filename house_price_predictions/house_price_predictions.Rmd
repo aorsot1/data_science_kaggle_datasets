@@ -394,15 +394,14 @@ This section will leverage the powerful sci-kit-learn package to build multiple 
 
 ```{r}
 # K-fold cross validation
-kfold_cv <- trainControl(method = "cv",  number = 5, 
-                        savePredictions = "all"
-                        )
+kfold_cv <- trainControl(method = "cv",  number = 5)
 ```
 
 ```{r}
 # Defining the models
 linreg <- train(form=SalePrice~., data = train,
                method="lm", trControl=kfold_cv, tuneLength=3)
+
 pred <- predict(linreg, train)
 obs <- train$SalePrice
 rmse(log(obs), log(pred))
@@ -433,12 +432,4 @@ elnet <- cv.glmnet(x=X_train, y=y_train, alpha = 0.25)
 pred <- predict(elnet, X_train)
 obs <- train$SalePrice
 rmse(log(obs), log(pred))
-```
-
-```{r}
-#tree <- train(form=SalePrice~., data = train,method="rpart", trControl=kfold_cv, tuneLength=3)
-
-#pred <- predict(tree, train)
-#obs <- train$SalePrice
-#rmse(log(obs), log(pred))
 ```

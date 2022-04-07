@@ -1141,9 +1141,7 @@ avoid any data leakage.
 
 ``` r
 # K-fold cross validation
-kfold_cv <- trainControl(method = "cv",  number = 5, 
-                        savePredictions = "all"
-                        )
+kfold_cv <- trainControl(method = "cv",  number = 5)
 ```
 
 ``` r
@@ -1213,11 +1211,3 @@ rmse(log(obs), log(pred))
 ```
 
     ## [1] 0.1624677
-
-``` r
-#tree <- train(form=SalePrice~., data = train,method="rpart", trControl=kfold_cv, tuneLength=3)
-
-#pred <- predict(tree, train)
-#obs <- train$SalePrice
-#rmse(log(obs), log(pred))
-```
