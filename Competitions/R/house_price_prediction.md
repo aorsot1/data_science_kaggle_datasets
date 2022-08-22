@@ -850,3 +850,324 @@ df %>% ggplot(aes(x=LotArea, y=SalePrice)) +
 ```
 
 ![](house_price_prediction_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+**Takeaway:** From the scatterplot above, there is very little evidence
+indicating that bigger houses are ultimiately pricier. As noted in the
+diagnostics, the 80 initial variables show how the house valuation
+process is multi-dimensional.
+
+**Question 2:** Where is the real estate hotspot?
+
+``` r
+# Which neighborhood registers the most sales?
+total <- df %>% 
+            group_by(Neighborhood) %>%
+            summarise(count = n_distinct(SalePrice)) %>% 
+            arrange(desc(count)) %>%
+            mutate(percent = count / sum(count) * 100)
+            
+total[1,] 
+```
+
+    ## # A tibble: 1 × 3
+    ##   Neighborhood count percent
+    ##   <chr>        <int>   <dbl>
+    ## 1 NAmes          148    12.1
+
+``` r
+# Which neighborhood registers the sales with the highest price tags?
+avg <- df %>% 
+            group_by(Neighborhood) %>%
+            summarise(avg = mean(SalePrice)) %>% 
+            arrange(desc(avg))
+            
+avg[1,] 
+```
+
+    ## # A tibble: 1 × 2
+    ##   Neighborhood     avg
+    ##   <chr>          <dbl>
+    ## 1 NoRidge      335295.
+
+**Note:** As per the data dictionary, NAmes refers North Ames and
+NoRidge refers to Northridge both located in Iowa, US.
+
+**Question 3:** What miscellaneous feature add the most value?
+
+``` r
+# Which miscellaneous feature is the most prevalent?
+misc <- df %>% 
+            group_by(MiscFeature) %>%
+            summarise(count = n_distinct(SalePrice)) %>% 
+            arrange(desc(count))
+            
+misc[2,] 
+```
+
+    ## # A tibble: 1 × 2
+    ##   MiscFeature count
+    ##   <chr>       <int>
+    ## 1 Shed           46
+
+**Takeaway:** For houses with miscellaneous features, Shed is the most
+prevalent in 46 houses.
+
+``` r
+# Calculating the value added
+misc_rows <- df %>% filter(MiscFeature == 'Shed')
+avg_mon_val <- mean(misc_rows$MiscVal)
+per_sale <- mean(misc_rows$MiscVal/misc_rows$SalePrice)*100
+avg_mon_val
+```
+
+    ## [1] 697.8367
+
+``` r
+per_sale
+```
+
+    ## [1] 0.4753533
+
+**Takeaway:** Shed has on average \$697.84 of monetary value making up
+0.48% of the house sale price on average.
+
+## 5. Feature Engineering
+
+**Feature Scaling:** When dealing with data, we are working with
+different types of which required adpated pre-processing before applying
+any machine learning techniques. In our content, we perform feature
+scaling to standardize only the values in continuous numerical
+variables. Read more
+[here](https://towardsdatascience.com/all-about-feature-scaling-bcc0ad75cb35).
+
+``` r
+# Filter numeric columns
+num_vars = c('LotFrontage', 'LotArea', 'MasVnrArea', 'BsmtFinSF1',
+           'BsmtFinSF2', 'BsmtUnfSF', 'TotalBsmtSF', '1stFlrSF', '2ndFlrSF',
+           'LowQualFinSF', 'GrLivArea', 'GarageArea', 'WoodDeckSF', 'OpenPorchSF',
+            'EnclosedPorch', '3SsnPorch', 'ScreenPorch', 'PoolArea', 'MiscVal')
+
+df[, num_vars] <- scale(df[, num_vars], center=TRUE, scale=TRUE)
+df %>% head()
+```
+
+    ## # A tibble: 6 × 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFr…¹ LotArea Street Alley LotSh…² LandC…³ Utili…⁴
+    ##   <dbl>      <dbl> <chr>      <dbl>   <dbl> <chr>  <chr> <chr>   <chr>   <chr>  
+    ## 1     1         60 RL        -0.240 -0.207  Pave   No a… Reg     Lvl     AllPub 
+    ## 2     2         20 RL         0.429 -0.0919 Pave   No a… Reg     Lvl     AllPub 
+    ## 3     3         60 RL        -0.106  0.0734 Pave   No a… IR1     Lvl     AllPub 
+    ## 4     4         70 RL        -0.463 -0.0969 Pave   No a… IR1     Lvl     AllPub 
+    ## 5     5         60 RL         0.608  0.375  Pave   No a… IR1     Lvl     AllPub 
+    ## 6     6         50 RL         0.652  0.360  Pave   No a… IR1     Lvl     AllPub 
+    ## # … with 71 more variables: LotConfig <chr>, LandSlope <chr>,
+    ## #   Neighborhood <chr>, Condition1 <chr>, Condition2 <chr>, BldgType <chr>,
+    ## #   HouseStyle <chr>, OverallQual <dbl>, OverallCond <dbl>, YearBuilt <dbl>,
+    ## #   YearRemodAdd <dbl>, RoofStyle <chr>, RoofMatl <chr>, Exterior1st <chr>,
+    ## #   Exterior2nd <chr>, MasVnrType <chr>, MasVnrArea <dbl>, ExterQual <chr>,
+    ## #   ExterCond <chr>, Foundation <chr>, BsmtQual <chr>, BsmtCond <chr>,
+    ## #   BsmtExposure <chr>, BsmtFinType1 <chr>, BsmtFinSF1 <dbl>, …
+
+**Categorical feature encoding** ensures that variables with
+categories/groupings are transformed into numerical inputs for the
+predictive modeling phase. The categorical variables are also subdivided
+as:
+
+-   binary (two possible outcomes)
+
+-   cardinal (no meaningful order)
+
+-   ordinal (meaningful order)
+
+Read more
+[here](https://www.analyticsvidhya.com/blog/2020/08/types-of-categorical-data-encoding/).
+
+``` r
+# List of nominal categorical variables
+cat_vars = c('CentralAir', 'MSSubClass', 'MSZoning', 'Street', 'Alley', 'LotConfig', 
+            'Neighborhood', 'Condition1', 'Condition2', 'BldgType', 
+            'HouseStyle', 'RoofStyle', 'RoofMatl', 'Exterior1st', 
+            'Exterior2nd', 'MasVnrType', 'Foundation', 'Electrical', 
+            'Functional', 'GarageType', 'MiscFeature', 'SaleType', 
+            'SaleCondition', 'LotShape', 'LandContour', 'Utilities', 
+            'LandSlope', 'OverallQual', 'OverallCond', 'ExterQual',
+            'ExterCond', 'BsmtQual', 'BsmtCond', 'BsmtExposure',
+            'BsmtFinType1', 'BsmtFinType2', 'HeatingQC', 'KitchenQual',
+            'FireplaceQu', 'GarageFinish', 'GarageQual', 'GarageCond',
+            'PavedDrive', 'PoolQC', 'Fence')
+
+df[cat_vars] <- lapply(df[cat_vars], factor)
+df %>% head()
+```
+
+    ## # A tibble: 6 × 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFr…¹ LotArea Street Alley LotSh…² LandC…³ Utili…⁴
+    ##   <dbl> <fct>      <fct>      <dbl>   <dbl> <fct>  <fct> <fct>   <fct>   <fct>  
+    ## 1     1 60         RL        -0.240 -0.207  Pave   No a… Reg     Lvl     AllPub 
+    ## 2     2 20         RL         0.429 -0.0919 Pave   No a… Reg     Lvl     AllPub 
+    ## 3     3 60         RL        -0.106  0.0734 Pave   No a… IR1     Lvl     AllPub 
+    ## 4     4 70         RL        -0.463 -0.0969 Pave   No a… IR1     Lvl     AllPub 
+    ## 5     5 60         RL         0.608  0.375  Pave   No a… IR1     Lvl     AllPub 
+    ## 6     6 50         RL         0.652  0.360  Pave   No a… IR1     Lvl     AllPub 
+    ## # … with 71 more variables: LotConfig <fct>, LandSlope <fct>,
+    ## #   Neighborhood <fct>, Condition1 <fct>, Condition2 <fct>, BldgType <fct>,
+    ## #   HouseStyle <fct>, OverallQual <fct>, OverallCond <fct>, YearBuilt <dbl>,
+    ## #   YearRemodAdd <dbl>, RoofStyle <fct>, RoofMatl <fct>, Exterior1st <fct>,
+    ## #   Exterior2nd <fct>, MasVnrType <fct>, MasVnrArea <dbl>, ExterQual <fct>,
+    ## #   ExterCond <fct>, Foundation <fct>, BsmtQual <fct>, BsmtCond <fct>,
+    ## #   BsmtExposure <fct>, BsmtFinType1 <fct>, BsmtFinSF1 <dbl>, …
+
+**Datetime Variables:** There are variables denoting dates and thus, may
+hold significance and impact our target variable: the house’s sale
+price.
+
+Based on research, we thought that the most sensible option would be to
+transform the datetime variables into ordinal categories in twofold:
+
+-   Direct encoding of ‘MoSold’ and ‘YrSold’ having 12 and 5 pre-defined
+    categories that are the 12 months and 5 years respectively during
+    which the houses in the dataset were sold.
+
+-   Binning of ‘YearRemodAdd’ and ‘YearBuilt’ into 6 categories of 10
+    and 20 years of interval respectively before proceeding to ordinal
+    encoding as well.
+
+``` r
+df <- df %>% 
+        mutate(YearRemodAdd = cut(YearRemodAdd, breaks=6),
+               YearBuilt = cut(YearBuilt, breaks=6))
+df %>% head()
+```
+
+    ## # A tibble: 6 × 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFr…¹ LotArea Street Alley LotSh…² LandC…³ Utili…⁴
+    ##   <dbl> <fct>      <fct>      <dbl>   <dbl> <fct>  <fct> <fct>   <fct>   <fct>  
+    ## 1     1 60         RL        -0.240 -0.207  Pave   No a… Reg     Lvl     AllPub 
+    ## 2     2 20         RL         0.429 -0.0919 Pave   No a… Reg     Lvl     AllPub 
+    ## 3     3 60         RL        -0.106  0.0734 Pave   No a… IR1     Lvl     AllPub 
+    ## 4     4 70         RL        -0.463 -0.0969 Pave   No a… IR1     Lvl     AllPub 
+    ## 5     5 60         RL         0.608  0.375  Pave   No a… IR1     Lvl     AllPub 
+    ## 6     6 50         RL         0.652  0.360  Pave   No a… IR1     Lvl     AllPub 
+    ## # … with 71 more variables: LotConfig <fct>, LandSlope <fct>,
+    ## #   Neighborhood <fct>, Condition1 <fct>, Condition2 <fct>, BldgType <fct>,
+    ## #   HouseStyle <fct>, OverallQual <fct>, OverallCond <fct>, YearBuilt <fct>,
+    ## #   YearRemodAdd <fct>, RoofStyle <fct>, RoofMatl <fct>, Exterior1st <fct>,
+    ## #   Exterior2nd <fct>, MasVnrType <fct>, MasVnrArea <dbl>, ExterQual <fct>,
+    ## #   ExterCond <fct>, Foundation <fct>, BsmtQual <fct>, BsmtCond <fct>,
+    ## #   BsmtExposure <fct>, BsmtFinType1 <fct>, BsmtFinSF1 <dbl>, …
+
+``` r
+# List of date categorical variables
+cat_vars = c('YearRemodAdd', 'YearBuilt', 'MoSold', 'YrSold')
+
+df[cat_vars] <- lapply(df[cat_vars], factor)
+df %>% head()
+```
+
+    ## # A tibble: 6 × 81
+    ## # Groups:   LotShape [2]
+    ##      Id MSSubClass MSZoning LotFr…¹ LotArea Street Alley LotSh…² LandC…³ Utili…⁴
+    ##   <dbl> <fct>      <fct>      <dbl>   <dbl> <fct>  <fct> <fct>   <fct>   <fct>  
+    ## 1     1 60         RL        -0.240 -0.207  Pave   No a… Reg     Lvl     AllPub 
+    ## 2     2 20         RL         0.429 -0.0919 Pave   No a… Reg     Lvl     AllPub 
+    ## 3     3 60         RL        -0.106  0.0734 Pave   No a… IR1     Lvl     AllPub 
+    ## 4     4 70         RL        -0.463 -0.0969 Pave   No a… IR1     Lvl     AllPub 
+    ## 5     5 60         RL         0.608  0.375  Pave   No a… IR1     Lvl     AllPub 
+    ## 6     6 50         RL         0.652  0.360  Pave   No a… IR1     Lvl     AllPub 
+    ## # … with 71 more variables: LotConfig <fct>, LandSlope <fct>,
+    ## #   Neighborhood <fct>, Condition1 <fct>, Condition2 <fct>, BldgType <fct>,
+    ## #   HouseStyle <fct>, OverallQual <fct>, OverallCond <fct>, YearBuilt <fct>,
+    ## #   YearRemodAdd <fct>, RoofStyle <fct>, RoofMatl <fct>, Exterior1st <fct>,
+    ## #   Exterior2nd <fct>, MasVnrType <fct>, MasVnrArea <dbl>, ExterQual <fct>,
+    ## #   ExterCond <fct>, Foundation <fct>, BsmtQual <fct>, BsmtCond <fct>,
+    ## #   BsmtExposure <fct>, BsmtFinType1 <fct>, BsmtFinSF1 <dbl>, …
+
+## 4. Correlation Analysis
+
+``` r
+# Correlation matrix and plot
+df_num <- df[, sapply(df, class) == "numeric"]
+cor <- cor(df_num)
+ggcorrplot(cor, hc.order = TRUE, insig = "blank",
+           type = "lower", ggtheme = theme_gray,
+           colors = c("#6D9EC1", "white", "#E46726"),
+           tl.cex = 10)
+```
+
+![](house_price_prediction_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+**Note:** Next, we will only filter out relatively and highly correlated
+relationship with coefficient between 0.7 and 1 (non-inclusive to avoid
+pairs of identical variables).
+
+``` r
+findCorrelation(x=cor, cutoff = .7, names=TRUE)
+```
+
+    ## [1] "GrLivArea"  "1stFlrSF"   "GarageCars"
+
+## 7. Machine Learning Set-Up
+
+Under this section, we will explain the procedure of two main splitting
+approach to estimate our models’ performance.
+
+``` r
+## Training Testing Split
+N <- nrow(df)
+trainingSize  <- round(N*0.7)
+trainingCases <- sample(N, trainingSize)
+train <- df[trainingCases,]
+test <- df[-trainingCases,]
+```
+
+``` r
+# K-Fold Cross Validation
+train.control <- trainControl(method = "cv", number = 10, verboseIter = FALSE)
+# Train the model
+model <- train(SalePrice ~., data = df, method = "lm",
+               trControl = train.control)
+```
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+``` r
+# Making predictions
+# pred <- predict(model, train)
+# obs <- train$SalePrice
+# rmse(obs, pred)
+```
+
+**Takeaway:** Based on the printout above, it will inform us about a
+multicollinearity issue we need to solve. So, before building any new
+model, we will test various techniques to solve it.
