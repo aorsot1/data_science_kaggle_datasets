@@ -6,9 +6,11 @@ version: 1.0
 output: github_document
 ---
 
-# **Fraud Detection**
+# 
 
-This notebook will attempt to build a predictive algorithm to detect a fraudulent transaction using a training dataset. We will explain the thinking process at every step using LIME (Local Interpretable Model-agnostic Explanations) principles making it accessible and user-friendly.
+# Graduate Admission
+
+In the course of a career, there arise multiple learning and professional opportunities like a Master's degree which often present itself as a fairly competitive race to the best universities and colleges around the world. Still, there are certain traits distinguishing applicants in the eye of admission offices. So, this notebook will attempt to build a predictive algorithm to determine chances of admissions (scale 0 to 1) given a set of variables. In doing so, we will follow LIME (Local Interpretable Model-agnostic Explanations) principles making it accessible and user-friendly to most readers.
 
 ## Table of Contents
 
@@ -22,13 +24,15 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
     -   Glimpse
 
-    -   Descriptive Statistics
+    -   Descriptive Statitics
 
     -   Target Variable Analysis
 
     -   Predictors Analysis
 
-3.  Data Cleaning
+3.  Data Processing
+
+    -   Drop & Rename
 
     -   Missing Values
 
@@ -36,41 +40,31 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
     -   Duplicate Observations
 
-4.  Correlation Analysis
-
     -   Correlation Matrix
 
-    -   Strongest relationship
+4.  Exploraty Data Analysis (EDA)
 
-5.  Inquiry Exploration
+    -   What is the distribution of our continuous predictors?
 
-    -   How does Amount's distribution behaves across classes?
+    -   Is there a cluster of admitted (prob \>= 0.75) and non-admitted by GRE & TOEFL Scores?
 
-    -   Are there any noteworthy point in time where fraud occurred?
+    -   How does the Undergrad GPA affect Masters Program Admissions given research experience?
 
-6.  Class Imbalance
+    -   Would the undergrad's college/university strenghten application statements and recommendations?
 
-    -   SMOTE - Synthetic Minority Oversampling Technique
+5.  Feature Engineering
 
-    -   Near-Miss Algorithm
+    -   Categorical Encoding
 
-    -   Combined Random Sampler
+    -   Variable Standardization
 
-7.  Machine Learning set-up
+6.  Machine Learning set-up
 
     -   Train-test split
 
     -   Cross-validation
 
-8.  Dimensionality Reduction
-
-    -   PCA - Principal Component Analysis
-
-    -   SVD - Singular Value Decomposition
-
-    -   LDA - Linear Discriminant Analysis
-
-9.  Machine Learning - Simple Models
+7.  Machine Learning - Simple Models
 
     -   Logistic Regression
 
@@ -80,7 +74,7 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
     -   Stochastic Gradient Descent
 
-10. Machine Learning - Ensemble Methods
+8.  Machine Learning - Ensemble Methods
 
     -   Random Forest
 
@@ -88,15 +82,17 @@ This notebook will attempt to build a predictive algorithm to detect a fraudulen
 
     -   StackingClassifier
 
-11. Hyperparameter Tuning
+9.  Model Performance Evaluation
 
-    -   Random Search
-
-    -   Grid Search
-
-12. Model Performance Evaluation
+    -   Other metrics
 
     -   Final Model
+
+    -   Regression Equation
+
+    -   Prediction Explanation
+
+10. Test Data - Model Performance
 
 ## 1. Environment Set-up
 
