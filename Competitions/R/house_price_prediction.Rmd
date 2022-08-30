@@ -132,7 +132,8 @@ df %>%
 **Takeaway:** From the histogram above, we can deduct that house sale prices in this dataset have a right-skewed distribution with outliers on the upper end, indicating luxury houses with higher price points. However, most houses appear to fall between \~USD100k and \~USD300k, relatively consistent with real estate markets in the United States.
 
 ## 
-3. Data Cleaning
+
+3.  Data Cleaning
 
 ```{r}
 missvalues_visual <- 
@@ -276,7 +277,8 @@ sprintf(fmt="Afer imputation, we have missing %d values in our data.",
 ```
 
 ## 
-4. Inquiry Exploration
+
+4.  Inquiry Exploration
 
 In this section, we will generate various questions to further consolidate our understanding of the problem at hand. It will allow us to guide the machine learning process more attuned to the particular subject matter.
 
@@ -451,38 +453,3 @@ model <- train(SalePrice ~., data = df, method = "lm",
 ```
 
 **Takeaway:** Based on the printout above, it will inform us about a multicollinearity issue we need to solve. So, before building any new model, we will test various techniques to solve it.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
