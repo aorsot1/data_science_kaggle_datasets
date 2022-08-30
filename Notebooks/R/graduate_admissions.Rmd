@@ -1,12 +1,10 @@
 ---
-title: "Fraud Detection"
+title: "Graduate Admission"
 author: Akoua Orsot
-date: August 20, 2022
+date: August 30, 2022
 version: 1.0
 output: github_document
 ---
-
-# 
 
 # Graduate Admission
 
@@ -90,8 +88,6 @@ In the course of a career, there arise multiple learning and professional opport
 
     -   Regression Equation
 
-    -   Prediction Explanation
-
 10. Test Data - Model Performance
 
 ## 1. Environment Set-up
@@ -120,7 +116,7 @@ library(PRROC)
 
 ```{r}
 ## Loading dataset
-df <- read_csv(file = 'C:/Users/Graduate/Desktop/ds_proj_data/creditcard.csv')
+df <- read.csv(file = 'C:/Users/Graduate/Desktop/ds_proj_data/Admission_Predict_Ver1.1.csv')
 ```
 
 ## 2. Initial Diagnostics
@@ -135,31 +131,20 @@ df %>% head()
 df %>% summary()
 ```
 
-**Takeaway:** The following percentage breakdown confirms the note in the project description; indeed, we have a considerable class imbalance with the target variable. It stays consistent that most fraudulent activities are much less frequent than non-fraudulent. Before proceeding, we shall note it to avoid any overfitting issues when fitting the machine learning models.
+**Takeaway:**
 
 ```{r}
 ## Target Variable Analysis
-df %>% group_by(Class) %>%
-  summarise(cnt = n()) %>%
-  mutate(freq = round(cnt / sum(cnt), 5)) %>% 
-  arrange(desc(freq))
-```
-
-**Note:** We did not have any information on the numerical predictors for privacy, given their transformation and standardization, excluding Amount & Time. In that regard, Amount presented itself as potentially most informative for the feature variable analysis. To better understand the variable's distribution, we had to transform it using a log scale.
-
-```{r}
-## Target Variable Analysis
-df$Amount %>% summary()
-
-df %>% ggplot(aes(Amount)) +
-  geom_histogram(bins=35) +
-  scale_x_log10() +
+df %>% ggplot(aes(Chance.of.Admit)) +
+  geom_histogram(bins=14) +
   labs(
-  x = "Dollar Amount (Log Scale)",
+  x = "Admission Probability",
   y = "Frequency (Count)",
-  title= "Distribution of Transaction Amount (log scaled)"
+  title= "Distribution Admission Probability"
  )
 ```
+
+**Note:**
 
 ## 3. Data Cleaning
 
