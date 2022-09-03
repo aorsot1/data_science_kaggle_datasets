@@ -1,7 +1,7 @@
 ---
 title: "Graduate Admission"
 author: Akoua Orsot
-date: August 30, 2022
+date: September 2nd, 2022
 version: 1.0
 output: github_document
 ---
@@ -22,7 +22,7 @@ In the course of a career, there arise multiple learning and professional opport
 
     -   Glimpse
 
-    -   Descriptive Statitics
+    -   Descriptive Statistics
 
     -   Target Variable Analysis
 
@@ -40,7 +40,7 @@ In the course of a career, there arise multiple learning and professional opport
 
     -   Correlation Matrix
 
-4.  Exploraty Data Analysis (EDA)
+4.  Exploratory Data Analysis (EDA)
 
     -   What is the distribution of our continuous predictors?
 
@@ -48,7 +48,7 @@ In the course of a career, there arise multiple learning and professional opport
 
     -   How does the Undergrad GPA affect Masters Program Admissions given research experience?
 
-    -   Would the undergrad's college/university strenghten application statements and recommendations?
+    -   Would the undergraduate's college/university strengthen application statements and recommendations?
 
 5.  Feature Engineering
 
@@ -78,17 +78,13 @@ In the course of a career, there arise multiple learning and professional opport
 
     -   Stochastic Gradient Boosting
 
-    -   StackingClassifier
+    -   StackingRegressor
 
-9.  Model Performance Evaluation
+9.  Trained Model Performance Evaluation
 
-    -   Other metrics
+10. Hyperparameter Tuning
 
-    -   Final Model
-
-    -   Regression Equation
-
-10. Test Data - Model Performance
+11. Final Model - Test Data Performance
 
 ## 1. Environment Set-up
 
@@ -126,15 +122,29 @@ df <- read.csv(file = 'C:/Users/Graduate/Desktop/ds_proj_data/Admission_Predict_
 df %>% head()
 ```
 
+**Note:** The dataset contains several parameters which are considered important during the application for Masters Programs. The parameters included are :
+
+-   GRE Scores ( out of 340 )
+
+-   TOEFL Scores ( out of 120 )
+
+-   University Rating ( out of 5 )
+
+-   Statement of Purpose and Letter of Recommendation Strength ( out of 5 )
+
+-   Undergraduate GPA ( out of 10 )
+
+-   Research Experience ( either 0 or 1 )
+
+-   Chance of Admit ( ranging from 0 to 1 )
+
 ```{r}
 ## Descriptive Statistics
 df %>% summary()
 ```
 
-**Takeaway:**
-
 ```{r}
-## Target Variable Analysis
+# Target Variable Analysis
 df %>% ggplot(aes(Chance.of.Admit)) +
   geom_histogram(bins=14) +
   labs(
@@ -144,9 +154,40 @@ df %>% ggplot(aes(Chance.of.Admit)) +
  )
 ```
 
-**Note:**
+**Takeaway:** We have here a left-skewed distribution of admission chances among the pool of candidates. With most people sitting in the range of 0.6 to 0.8, we can assume that those students demonstrated comopentency in the various test scores and undergraduate studies.
 
 ## 3. Data Cleaning
+
+**Note:** Before anything, we will proceed in dropping the Serial No. column and renaming some columns to retain ease of data manipulation.
+
+```{r}
+#' basic_processing <- function(data, col.drop) {
+#' #' Basic data processing: drop/rename columns, remove duplicate(s)
+#' #'
+#' # @param data: initial dataframe
+#' # @param col_drop: vector with column names to drop
+#' #
+#' # @return data: modified dataframe
+#'   data <- data %>% select(-col.drop)
+#'           #rename("Chance.of.Admit"= "target") %>%
+#'           
+#'   
+#'   return(data)
+#' }
+#' col.drop <- c(Serial.No.)
+#' basic_processing(df, col.drop = col.drop)
+```
+
+```{r}
+l <- list(a = 1,b = "foo",c = 1:5)
+for (i in l) {
+  print(i)
+}
+
+for (i in names(l)) {
+  print(i)
+}
+```
 
 ```{r}
 ## Missing Values
