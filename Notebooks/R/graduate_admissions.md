@@ -363,9 +363,9 @@ many data points as possible. Thus, allowing us to limit the biases
 simply to produce a better fitting model or statistically significant
 results.
 
-# 4. Exploratory Data Analysis
+## 4. Exploratory Data Analysis
 
-### What is the distribution of our target variable?
+### a) What is the distribution of our target variable?
 
 ``` r
 df %>% ggplot(aes(x=target)) +
@@ -382,9 +382,9 @@ df %>% ggplot(aes(x=target)) +
 **Takeaway:** We have here a left-skewed distribution of admission
 chances among the pool of candidates. With most people sitting in the
 range of 0.6 to 0.8, we can assume that those students demonstrated
-comopentency in the various test scores and undergraduate studies.
+competency in the various test scores and undergraduate studies.
 
-### What is the distribution of our continuous predictors?
+### b) What is the distribution of our continuous predictors?
 
 ``` r
 sop_plot <- df %>% ggplot(aes(SOP)) +
@@ -410,7 +410,7 @@ annotate_figure(comb_plot,
 distribution across all three variables thus, reassuring us of the
 normality withing our data.
 
-### Is there a cluster of admitted (prob \>= 0.75) and non-admitted by GRE & TOEFL Scores?
+### c) Is there a cluster of admitted (prob \>= 0.75) and non-admitted by GRE & TOEFL Scores?
 
 ``` r
 # Making a categorical target varibale using a threshold
@@ -433,7 +433,7 @@ annotate_figure(comb_plot,
 
 ![](graduate_admissions_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
-### How does the Undergrad GPA affect Masters Program Admissions given research experience?
+### d) How does the Undergrad GPA affect Masters Program Admissions given research experience?
 
 ``` r
 df %>% ggplot(aes(x=CGPA, y=target, color=Research)) +
@@ -450,24 +450,103 @@ those with higher results and research experience stands a better chance
 of admission compared to their counterparts with no research experience
 and average to low GPA.
 
-### Would the undergraduate’s college/university strengthen application statements and recommendations?
+### e) Would the undergraduate’s college/university strengthen application statements and recommendations?
 
 ``` r
-# sop_bar <- df %>% ggplot(aes(x=University.Rating, y=SOP, color=admin_binary)) +
-#                    geom_bar()
-# 
-# lor_bar <- df %>% ggplot(aes(x=University.Rating, y=LOR, color=admin_binary)) +
-#                    geom_bar()
-# 
-# comb_plot <- ggarrange(sop_bar, lor_bar, common.legend = TRUE,
-#                        ncol = 2, nrow = 1)
-# 
-# annotate_figure(comb_plot, 
-#                 top = text_grob("Application document strength based on University Rating", 
-#                color = "red", face = "bold", size = 14))
+sop_bar <- df %>% ggplot(aes(x=University.Rating, y=SOP, fill=admin_binary)) +
+                  geom_bar(stat="identity", width=.5, position = "dodge")  
+
+lor_bar <- df %>% ggplot(aes(x=University.Rating, y=LOR, fill=admin_binary)) +
+                   geom_bar(stat="identity", width=.5, position = "dodge")
+
+comb_plot <- ggarrange(sop_bar, lor_bar, common.legend = TRUE, 
+                       legend = "left", ncol = 1, nrow = 2)
+
+annotate_figure(comb_plot,
+                top = text_grob("Application document strength based on University Rating",
+               color = "red", face = "bold", size = 14))
 ```
 
-**Takeaway:** In contrast to the clear seperation above, the university
+![](graduate_admissions_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+**Takeaway:** In contrast to the clear separation above, the university
 rating does not have a drastic effect on those predictors. It would
 indicates how much weight this variable has in the final decision
 process.
+
+``` r
+df$admin_binary <- NULL
+```
+
+## 5. Feature Engineering
+
+**Note:** Based on the glimpse into the dataset, it appears that we have
+two categorical variables that are University Rating and Research being
+of type ordinal and binary respectively. We will proceed in encoding
+them accordingly.
+
+``` r
+# Binary variables
+df$Research <- as.logical(df$Research)
+```
+
+``` r
+# Ordinal variables
+df$University.Rating <- factor(df$University.Rating,
+                                  levels = sort(unique(df$University.Rating)),
+                                  labels = sort(unique(df$University.Rating)))
+
+df$SOP <- factor(df$SOP, levels = sort(unique(df$SOP)),
+                  labels = sort(unique(df$SOP)))
+
+df$LOR <- factor(df$LOR, levels = sort(unique(df$LOR)),
+                  labels = sort(unique(df$LOR)))
+```
+
+**Note:** Given the differences in scales across the independent
+variables, we will proceed in standardizing them all with a
+preprocessing step using scale on the numeric variables.
+
+``` r
+df <- df %>% 
+        mutate_at(c("GRE.Score", "TOEFL.Score", "CGPA"), ~(scale(.) 
+                                                           %>% as.vector))
+```
+
+## 6. Machine Learning set-up
+
+Under this section, we will explain the procedure of two main splitting
+approach to estimate our models’ performance.
+
+**Definition:** Often denoted as the most popular by its simplicity, the
+train-test split is a sampling technique dividing the dataset between
+training and testing sets. In doing so, the goal would be to have enough
+(but not too much) in our training set used for the machine learning
+model to predict the observations in the testing set as accurately as
+possible. Most would opt for a 70/30 training-testing split,
+respectively, others 80/20, 60/40, or whichever else works best for the
+case scenario. Further information
+[here](https://machinelearningmastery.com/train-test-split-for-evaluating-machine-learning-algorithms/).
+
+``` r
+# Partitioning train-test split
+index <- createDataPartition(y = df$target, p = .7, 
+                             times = 1, list = FALSE)
+train <- df[index,]
+test  <- df[-index,]
+```
+
+## 7. Simple Machine Learning Models - CV
+
+This section will leverage the powerful sci-kit-learn package to build
+multiple models with little to no parameter tuning for comparison. We
+will only use the cross-validation error on our training dataset to
+avoid any data leakage.
+
+**Definition:** As the name would suggest, we will engage here in the
+process of validation to ensure reliability on our model.
+Cross-Validation is a statistical method applied in various ways to
+estimate the model’s performance. Some examples are **Holdout Method,
+K-Fold, Stratified K-Fold, Leave-P-Out.** Further information
+[here](https://machinelearningmastery.com/k-fold-cross-validation/) and
+[here](https://towardsdatascience.com/cross-validation-in-machine-learning-72924a69872f).
