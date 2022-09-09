@@ -132,6 +132,7 @@ library(tidyverse)
 
 ``` r
 library(ggplot2)
+library(ggpubr)
 
 library(ROSE)
 ```
@@ -357,14 +358,26 @@ all_zscores[all_zscores >= 2.5]
     ## [1] 2.684101 2.937173 2.562980 2.704683 2.562980 2.704683
 
 **Takeaway:** As we thought about handling those outliers, we decided to
-keep them all since ggood data science practices advocates to conserve
-as many data points as possible. Thus, allowing us to limit the biases
+keep them all since good data science practices advocates to conserve as
+many data points as possible. Thus, allowing us to limit the biases
 simply to produce a better fitting model or statistically significant
 results.
 
 # 4. Exploratory Data Analysis
 
 ### What is the distribution of our target variable?
+
+``` r
+df %>% ggplot(aes(x=target)) +
+  geom_histogram() +
+  xlab("Admission Probability") +
+  ylab("Frequency (Count)") +
+  labs(title="Distribution of Target Variable")
+```
+
+    ## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+
+![](graduate_admissions_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 **Takeaway:** We have here a left-skewed distribution of admission
 chances among the pool of candidates. With most people sitting in the
@@ -373,22 +386,86 @@ comopentency in the various test scores and undergraduate studies.
 
 ### What is the distribution of our continuous predictors?
 
+``` r
+sop_plot <- df %>% ggplot(aes(SOP)) +
+                   geom_boxplot()
+
+lor_plot <- df %>% ggplot(aes(LOR)) +
+                   geom_boxplot()
+
+cgpa_plot <- df %>% ggplot(aes(CGPA)) +
+                   geom_boxplot()
+
+comb_plot <- ggarrange(sop_plot, lor_plot, cgpa_plot, 
+                       ncol = 2, nrow = 2)
+
+annotate_figure(comb_plot, 
+                top = text_grob("Distrbituion of continuous predictors", 
+               color = "red", face = "bold", size = 14))
+```
+
+![](graduate_admissions_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+
 **Takeaway:** In the chart above, we can observe a fairly normal
-distrbution across all three variables thus, reassuring us of the
+distribution across all three variables thus, reassuring us of the
 normality withing our data.
 
 ### Is there a cluster of admitted (prob \>= 0.75) and non-admitted by GRE & TOEFL Scores?
 
+``` r
+# Making a categorical target varibale using a threshold
+df['admin_binary'] <- as.factor(ifelse(target >= 0.75, 1, 0))
+
+# Ploting the TOEFL & GRE Scores accordingly
+toefl_hist <- df %>% ggplot(aes(x=TOEFL.Score, fill=admin_binary)) +
+                     geom_density()
+
+gre_hist <- df %>% ggplot(aes(x=GRE.Score, fill=admin_binary)) +
+                     geom_density()
+
+comb_plot <- ggarrange(toefl_hist, gre_hist, common.legend = TRUE,
+                       ncol = 2, nrow = 1)
+
+annotate_figure(comb_plot, 
+                top = text_grob("TOEFL & GRE Scores by Admin Status", 
+               color = "red", face = "bold", size = 14))
+```
+
+![](graduate_admissions_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+
 ### How does the Undergrad GPA affect Masters Program Admissions given research experience?
 
-**Takeaway:** With the multiplot shown of admissiong probability with
-respect to College GPA, there appreaws to be a strong correlated
-relationship. Though they are not as clearly seperated, the clusters of
+``` r
+df %>% ggplot(aes(x=CGPA, y=target, color=Research)) +
+  geom_point() +
+  labs(title="Admission rate by College GPA based on Research Experience")
+```
+
+![](graduate_admissions_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+**Takeaway:** With the multi-plot shown of admission probability with
+respect to College GPA, there appearss to be a strong correlated
+relationship. Though they are not as clearly separated, the clusters of
 those with higher results and research experience stands a better chance
-of admission compared to their counterparts with no research experince
+of admission compared to their counterparts with no research experience
 and average to low GPA.
 
-### Would the undergrad’s college/university strenghten application statements and recommendations?
+### Would the undergraduate’s college/university strengthen application statements and recommendations?
+
+``` r
+# sop_bar <- df %>% ggplot(aes(x=University.Rating, y=SOP, color=admin_binary)) +
+#                    geom_bar()
+# 
+# lor_bar <- df %>% ggplot(aes(x=University.Rating, y=LOR, color=admin_binary)) +
+#                    geom_bar()
+# 
+# comb_plot <- ggarrange(sop_bar, lor_bar, common.legend = TRUE,
+#                        ncol = 2, nrow = 1)
+# 
+# annotate_figure(comb_plot, 
+#                 top = text_grob("Application document strength based on University Rating", 
+#                color = "red", face = "bold", size = 14))
+```
 
 **Takeaway:** In contrast to the clear seperation above, the university
 rating does not have a drastic effect on those predictors. It would
