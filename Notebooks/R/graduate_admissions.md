@@ -1,7 +1,7 @@
 Graduate Admission
 ================
 Akoua Orsot
-September 2nd, 2022
+September 10, 2022
 
 # Graduate Admission
 
@@ -393,7 +393,7 @@ df %>% ggplot(aes(x=CGPA, y=target, color=Research)) +
 ![](graduate_admissions_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 **Takeaway:** With the multi-plot shown of admission probability with
-respect to College GPA, there appearss to be a strong correlated
+respect to College GPA, there appears to be a strong correlated
 relationship. Though they are not as clearly separated, the clusters of
 those with higher results and research experience stands a better chance
 of admission compared to their counterparts with no research experience
@@ -454,7 +454,7 @@ df$LOR <- factor(df$LOR, levels = sort(unique(df$LOR)),
 
 **Note:** Given the differences in scales across the independent
 variables, we will proceed in standardizing them all with a
-preprocessing step using scale on the numeric variables.
+pre-processing step using scale on the numeric variables.
 
 ``` r
 df <- df %>% 
