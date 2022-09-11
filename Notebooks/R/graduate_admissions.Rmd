@@ -101,14 +101,8 @@ library(corrplot)
 
 library(e1071)
 library(caret)
-library(rpart)
 
-library(gmodels)
-library(glmnet)
-
-library(MLmetrics)
-require(MASS)
-library(PRROC)
+library(tibble)
 ```
 
 ```{r}
@@ -333,8 +327,57 @@ train <- df[index,]
 test  <- df[-index,]
 ```
 
+**Definition:** As the name would suggest, we will engage here in the process of validation to ensure reliability on our model. Cross-Validation is a statistical method applied in various ways to estimate the model's performance. Some examples are **Holdout Method, K-Fold, Stratified K-Fold, Leave-P-Out.** Further information [here](https://machinelearningmastery.com/k-fold-cross-validation/) and [here](https://towardsdatascience.com/cross-validation-in-machine-learning-72924a69872f).
+
+```{r}
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 5)
+```
+
 ## 7. Simple Machine Learning Models - CV
 
 This section will leverage the powerful sci-kit-learn package to build multiple models with little to no parameter tuning for comparison. We will only use the cross-validation error on our training dataset to avoid any data leakage.
 
-**Definition:** As the name would suggest, we will engage here in the process of validation to ensure reliability on our model. Cross-Validation is a statistical method applied in various ways to estimate the model's performance. Some examples are **Holdout Method, K-Fold, Stratified K-Fold, Leave-P-Out.** Further information [here](https://machinelearningmastery.com/k-fold-cross-validation/) and [here](https://towardsdatascience.com/cross-validation-in-machine-learning-72924a69872f).
+```{r}
+model_comparison <- function(models, train_data, control) {
+  for (m in models) {
+    model <- train(target ~ ., data = train_data,
+                   method = m, trControl = control,
+                   metric = "RMSE")
+    res <- model$results %>% add_column(model = m, .before = 1)
+    print(res)
+  }
+}
+```
+
+```{r}
+lin_models <- c('lm', 'knn', 'rpart2', 'svmLinear')
+model_comparison(lin_models, train, fitControl)
+```
+
+**Takeaway:** Our best model is the Multiple linear regression with the lowest Cross-validated RMSE at \~0.06. The second best would be SVR instead of kNN because the lower standard deviation would indicate better reliability when thinking about scaling.
+
+## 8. Ensemble Methods - CV
+
+This section will extend our work in machine learning to incorporate ensemble methods. We generated simple models and compared the scores, which appear satisfactory, with the lowest cross validated RMSE at 0.06. In ourdesire greater performance and stability in our predictive algorithm, ensemble methods would prove more effective. Most often, they act as a 'superposer' of multiple models throughout various ways and thus, bolster their predictive power. Further Information [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+
+```{r}
+models_ensemble <- c('rf', 'gbm')
+model_comparison(models_ensemble, train, fitControl)
+```
+
+**Takeaway:** Based on the results, Stochastic Gradient Descent performs better than the other two ensemble methods while offering worse results than the Multiple Linear Regression. We would consider preferably the simple model that is the Multiple Linear Regression based on Occam's razor principles regarding complexity (Further information [here](https://math.ucr.edu/home/baez/physics/General/occam.html)). The Multiple Linear Regression proves to be more effective across multiple than the Stochastic Gradient Descent. However, we should remain cognizant that our training set is fairly small and the hyper-parameter are all set to default settings. Before giving the final recommendation, we will conduct hyper parameter tuning on our best model so far through Grid search to find the best parameters.
+
+## 9. Test Data - Model Performance
+
+```{r}
+model <- train(target ~ ., data = test,
+               method = 'lm', trControl = fitControl,
+               metric = "RMSE")
+res <- model$results %>% add_column(model = 'MLR', .before = 1)
+res
+```
+
+**Takeaway:** Though the results are slighter than the training results, the performance is still satisfactory remainig close to 0 as we would desire.
+

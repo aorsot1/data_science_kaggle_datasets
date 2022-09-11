@@ -159,59 +159,8 @@ library(caret)
     ##     lift
 
 ``` r
-library(rpart)
-
-library(gmodels)
-library(glmnet)
+library(tibble)
 ```
-
-    ## Loading required package: Matrix
-    ## 
-    ## Attaching package: 'Matrix'
-    ## 
-    ## The following objects are masked from 'package:tidyr':
-    ## 
-    ##     expand, pack, unpack
-    ## 
-    ## Loaded glmnet 4.1-4
-
-``` r
-library(MLmetrics)
-```
-
-    ## 
-    ## Attaching package: 'MLmetrics'
-    ## 
-    ## The following objects are masked from 'package:caret':
-    ## 
-    ##     MAE, RMSE
-    ## 
-    ## The following object is masked from 'package:base':
-    ## 
-    ##     Recall
-
-``` r
-require(MASS)
-```
-
-    ## Loading required package: MASS
-    ## 
-    ## Attaching package: 'MASS'
-    ## 
-    ## The following object is masked from 'package:dplyr':
-    ## 
-    ##     select
-
-``` r
-library(PRROC)
-```
-
-    ## 
-    ## Attaching package: 'PRROC'
-    ## 
-    ## The following object is masked from 'package:ROSE':
-    ## 
-    ##     roc.curve
 
 ``` r
 ## Loading dataset
@@ -536,13 +485,6 @@ train <- df[index,]
 test  <- df[-index,]
 ```
 
-## 7. Simple Machine Learning Models - CV
-
-This section will leverage the powerful sci-kit-learn package to build
-multiple models with little to no parameter tuning for comparison. We
-will only use the cross-validation error on our training dataset to
-avoid any data leakage.
-
 **Definition:** As the name would suggest, we will engage here in the
 process of validation to ensure reliability on our model.
 Cross-Validation is a statistical method applied in various ways to
@@ -550,3 +492,466 @@ estimate the model’s performance. Some examples are **Holdout Method,
 K-Fold, Stratified K-Fold, Leave-P-Out.** Further information
 [here](https://machinelearningmastery.com/k-fold-cross-validation/) and
 [here](https://towardsdatascience.com/cross-validation-in-machine-learning-72924a69872f).
+
+``` r
+fitControl <- trainControl(## 10-fold CV
+                           method = "repeatedcv",
+                           number = 5)
+```
+
+## 7. Simple Machine Learning Models - CV
+
+This section will leverage the powerful sci-kit-learn package to build
+multiple models with little to no parameter tuning for comparison. We
+will only use the cross-validation error on our training dataset to
+avoid any data leakage.
+
+``` r
+model_comparison <- function(models, train_data, control) {
+  for (m in models) {
+    model <- train(target ~ ., data = train_data,
+                   method = m, trControl = control,
+                   metric = "RMSE")
+    res <- model$results %>% add_column(model = m, .before = 1)
+    print(res)
+  }
+}
+```
+
+``` r
+lin_models <- c('lm', 'knn', 'rpart2', 'svmLinear')
+model_comparison(lin_models, train, fitControl)
+```
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ##   model intercept       RMSE  Rsquared        MAE     RMSESD RsquaredSD
+    ## 1    lm      TRUE 0.06138524 0.8106745 0.04431924 0.00629469 0.04434186
+    ##         MAESD
+    ## 1 0.004163515
+    ##   model k       RMSE  Rsquared        MAE      RMSESD RsquaredSD       MAESD
+    ## 1   knn 5 0.07073069 0.7513740 0.05192348 0.003540891 0.02180304 0.003134776
+    ## 2   knn 7 0.07005945 0.7554005 0.05172072 0.002745027 0.01543700 0.003322137
+    ## 3   knn 9 0.06788888 0.7714313 0.05077904 0.004074831 0.02047766 0.004487585
+    ##    model maxdepth       RMSE  Rsquared        MAE      RMSESD RsquaredSD
+    ## 1 rpart2        1 0.09948416 0.5083558 0.08065894 0.005149977 0.03224063
+    ## 2 rpart2        2 0.08812653 0.6170818 0.06983604 0.004459793 0.03179965
+    ## 3 rpart2        3 0.07527132 0.7218251 0.05584944 0.008245012 0.05605300
+    ##         MAESD
+    ## 1 0.003058149
+    ## 2 0.002176405
+    ## 3 0.007129911
+    ##       model C      RMSE Rsquared        MAE      RMSESD RsquaredSD       MAESD
+    ## 1 svmLinear 1 0.0629387  0.80874 0.04442098 0.005727009 0.02048148 0.005002368
+
+**Takeaway:** Our best model is the Multiple linear regression with the
+lowest Cross-validated RMSE at \~0.06. The second best would be SVR
+instead of kNN because the lower standard deviation would indicate
+better reliability when thinking about scaling.
+
+## 8. Ensemble Methods - CV
+
+This section will extend our work in machine learning to incorporate
+ensemble methods. We generated simple models and compared the scores,
+which appear satisfactory, with the lowest cross validated RMSE at 0.06.
+In ourdesire greater performance and stability in our predictive
+algorithm, ensemble methods would prove more effective. Most often, they
+act as a ‘superposer’ of multiple models throughout various ways and
+thus, bolster their predictive power. Further Information
+[here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+
+``` r
+models_ensemble <- c('rf', 'gbm')
+model_comparison(models_ensemble, train, fitControl)
+```
+
+    ##   model mtry       RMSE  Rsquared        MAE      RMSESD RsquaredSD       MAESD
+    ## 1    rf    2 0.06772963 0.7871247 0.05044340 0.008700943 0.05852980 0.005720792
+    ## 2    rf   13 0.06321400 0.7991413 0.04481385 0.007430374 0.05398125 0.005718878
+    ## 3    rf   24 0.06523646 0.7865561 0.04645281 0.007471336 0.05394808 0.006040694
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0183             nan     0.1000    0.0020
+    ##      2        0.0165             nan     0.1000    0.0016
+    ##      3        0.0148             nan     0.1000    0.0013
+    ##      4        0.0136             nan     0.1000    0.0011
+    ##      5        0.0125             nan     0.1000    0.0011
+    ##      6        0.0116             nan     0.1000    0.0010
+    ##      7        0.0109             nan     0.1000    0.0006
+    ##      8        0.0101             nan     0.1000    0.0007
+    ##      9        0.0096             nan     0.1000    0.0006
+    ##     10        0.0088             nan     0.1000    0.0006
+    ##     20        0.0055             nan     0.1000    0.0002
+    ##     40        0.0038             nan     0.1000   -0.0000
+    ##     60        0.0034             nan     0.1000   -0.0000
+    ##     80        0.0033             nan     0.1000   -0.0000
+    ##    100        0.0032             nan     0.1000   -0.0000
+    ##    120        0.0031             nan     0.1000   -0.0000
+    ##    140        0.0031             nan     0.1000   -0.0000
+    ##    150        0.0030             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0177             nan     0.1000    0.0024
+    ##      2        0.0155             nan     0.1000    0.0021
+    ##      3        0.0136             nan     0.1000    0.0018
+    ##      4        0.0121             nan     0.1000    0.0015
+    ##      5        0.0109             nan     0.1000    0.0011
+    ##      6        0.0099             nan     0.1000    0.0009
+    ##      7        0.0091             nan     0.1000    0.0007
+    ##      8        0.0083             nan     0.1000    0.0008
+    ##      9        0.0075             nan     0.1000    0.0007
+    ##     10        0.0070             nan     0.1000    0.0006
+    ##     20        0.0042             nan     0.1000    0.0001
+    ##     40        0.0032             nan     0.1000   -0.0000
+    ##     60        0.0030             nan     0.1000   -0.0000
+    ##     80        0.0029             nan     0.1000   -0.0000
+    ##    100        0.0028             nan     0.1000   -0.0000
+    ##    120        0.0027             nan     0.1000   -0.0000
+    ##    140        0.0026             nan     0.1000   -0.0000
+    ##    150        0.0026             nan     0.1000   -0.0001
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0175             nan     0.1000    0.0026
+    ##      2        0.0151             nan     0.1000    0.0023
+    ##      3        0.0132             nan     0.1000    0.0020
+    ##      4        0.0117             nan     0.1000    0.0016
+    ##      5        0.0103             nan     0.1000    0.0013
+    ##      6        0.0091             nan     0.1000    0.0010
+    ##      7        0.0082             nan     0.1000    0.0009
+    ##      8        0.0075             nan     0.1000    0.0008
+    ##      9        0.0068             nan     0.1000    0.0005
+    ##     10        0.0062             nan     0.1000    0.0005
+    ##     20        0.0038             nan     0.1000    0.0001
+    ##     40        0.0030             nan     0.1000   -0.0000
+    ##     60        0.0028             nan     0.1000   -0.0000
+    ##     80        0.0026             nan     0.1000   -0.0000
+    ##    100        0.0025             nan     0.1000   -0.0000
+    ##    120        0.0023             nan     0.1000   -0.0000
+    ##    140        0.0022             nan     0.1000   -0.0000
+    ##    150        0.0022             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0183             nan     0.1000    0.0020
+    ##      2        0.0164             nan     0.1000    0.0016
+    ##      3        0.0149             nan     0.1000    0.0013
+    ##      4        0.0137             nan     0.1000    0.0012
+    ##      5        0.0126             nan     0.1000    0.0010
+    ##      6        0.0117             nan     0.1000    0.0009
+    ##      7        0.0109             nan     0.1000    0.0007
+    ##      8        0.0100             nan     0.1000    0.0007
+    ##      9        0.0094             nan     0.1000    0.0006
+    ##     10        0.0089             nan     0.1000    0.0004
+    ##     20        0.0055             nan     0.1000    0.0002
+    ##     40        0.0038             nan     0.1000    0.0000
+    ##     60        0.0034             nan     0.1000   -0.0000
+    ##     80        0.0033             nan     0.1000   -0.0000
+    ##    100        0.0032             nan     0.1000   -0.0000
+    ##    120        0.0031             nan     0.1000   -0.0000
+    ##    140        0.0030             nan     0.1000   -0.0000
+    ##    150        0.0030             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0176             nan     0.1000    0.0026
+    ##      2        0.0154             nan     0.1000    0.0020
+    ##      3        0.0136             nan     0.1000    0.0015
+    ##      4        0.0122             nan     0.1000    0.0013
+    ##      5        0.0111             nan     0.1000    0.0013
+    ##      6        0.0098             nan     0.1000    0.0009
+    ##      7        0.0089             nan     0.1000    0.0008
+    ##      8        0.0082             nan     0.1000    0.0007
+    ##      9        0.0074             nan     0.1000    0.0008
+    ##     10        0.0069             nan     0.1000    0.0005
+    ##     20        0.0042             nan     0.1000    0.0001
+    ##     40        0.0033             nan     0.1000    0.0000
+    ##     60        0.0030             nan     0.1000   -0.0000
+    ##     80        0.0029             nan     0.1000   -0.0000
+    ##    100        0.0028             nan     0.1000   -0.0000
+    ##    120        0.0027             nan     0.1000   -0.0000
+    ##    140        0.0026             nan     0.1000   -0.0000
+    ##    150        0.0026             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0175             nan     0.1000    0.0027
+    ##      2        0.0151             nan     0.1000    0.0024
+    ##      3        0.0132             nan     0.1000    0.0017
+    ##      4        0.0115             nan     0.1000    0.0016
+    ##      5        0.0101             nan     0.1000    0.0013
+    ##      6        0.0089             nan     0.1000    0.0009
+    ##      7        0.0080             nan     0.1000    0.0009
+    ##      8        0.0073             nan     0.1000    0.0006
+    ##      9        0.0067             nan     0.1000    0.0005
+    ##     10        0.0061             nan     0.1000    0.0005
+    ##     20        0.0038             nan     0.1000    0.0001
+    ##     40        0.0030             nan     0.1000   -0.0000
+    ##     60        0.0028             nan     0.1000   -0.0000
+    ##     80        0.0026             nan     0.1000   -0.0000
+    ##    100        0.0025             nan     0.1000   -0.0000
+    ##    120        0.0024             nan     0.1000   -0.0000
+    ##    140        0.0023             nan     0.1000   -0.0000
+    ##    150        0.0022             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0180             nan     0.1000    0.0021
+    ##      2        0.0161             nan     0.1000    0.0016
+    ##      3        0.0147             nan     0.1000    0.0014
+    ##      4        0.0134             nan     0.1000    0.0011
+    ##      5        0.0122             nan     0.1000    0.0009
+    ##      6        0.0113             nan     0.1000    0.0009
+    ##      7        0.0105             nan     0.1000    0.0007
+    ##      8        0.0097             nan     0.1000    0.0007
+    ##      9        0.0090             nan     0.1000    0.0007
+    ##     10        0.0085             nan     0.1000    0.0005
+    ##     20        0.0053             nan     0.1000    0.0001
+    ##     40        0.0035             nan     0.1000    0.0000
+    ##     60        0.0032             nan     0.1000   -0.0000
+    ##     80        0.0031             nan     0.1000   -0.0000
+    ##    100        0.0029             nan     0.1000   -0.0000
+    ##    120        0.0029             nan     0.1000   -0.0000
+    ##    140        0.0029             nan     0.1000   -0.0000
+    ##    150        0.0028             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0175             nan     0.1000    0.0024
+    ##      2        0.0154             nan     0.1000    0.0018
+    ##      3        0.0136             nan     0.1000    0.0018
+    ##      4        0.0120             nan     0.1000    0.0014
+    ##      5        0.0106             nan     0.1000    0.0011
+    ##      6        0.0094             nan     0.1000    0.0011
+    ##      7        0.0086             nan     0.1000    0.0007
+    ##      8        0.0078             nan     0.1000    0.0007
+    ##      9        0.0072             nan     0.1000    0.0006
+    ##     10        0.0066             nan     0.1000    0.0005
+    ##     20        0.0040             nan     0.1000    0.0000
+    ##     40        0.0031             nan     0.1000   -0.0000
+    ##     60        0.0029             nan     0.1000    0.0000
+    ##     80        0.0027             nan     0.1000   -0.0000
+    ##    100        0.0026             nan     0.1000   -0.0000
+    ##    120        0.0025             nan     0.1000   -0.0000
+    ##    140        0.0024             nan     0.1000   -0.0000
+    ##    150        0.0024             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0173             nan     0.1000    0.0027
+    ##      2        0.0152             nan     0.1000    0.0022
+    ##      3        0.0132             nan     0.1000    0.0018
+    ##      4        0.0115             nan     0.1000    0.0017
+    ##      5        0.0101             nan     0.1000    0.0013
+    ##      6        0.0090             nan     0.1000    0.0011
+    ##      7        0.0081             nan     0.1000    0.0008
+    ##      8        0.0073             nan     0.1000    0.0007
+    ##      9        0.0067             nan     0.1000    0.0005
+    ##     10        0.0061             nan     0.1000    0.0005
+    ##     20        0.0036             nan     0.1000    0.0001
+    ##     40        0.0028             nan     0.1000   -0.0000
+    ##     60        0.0026             nan     0.1000   -0.0000
+    ##     80        0.0025             nan     0.1000   -0.0000
+    ##    100        0.0023             nan     0.1000   -0.0000
+    ##    120        0.0022             nan     0.1000   -0.0000
+    ##    140        0.0021             nan     0.1000   -0.0000
+    ##    150        0.0020             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0176             nan     0.1000    0.0020
+    ##      2        0.0160             nan     0.1000    0.0015
+    ##      3        0.0146             nan     0.1000    0.0010
+    ##      4        0.0133             nan     0.1000    0.0012
+    ##      5        0.0121             nan     0.1000    0.0010
+    ##      6        0.0112             nan     0.1000    0.0009
+    ##      7        0.0102             nan     0.1000    0.0008
+    ##      8        0.0096             nan     0.1000    0.0006
+    ##      9        0.0090             nan     0.1000    0.0005
+    ##     10        0.0084             nan     0.1000    0.0004
+    ##     20        0.0052             nan     0.1000    0.0001
+    ##     40        0.0036             nan     0.1000   -0.0000
+    ##     60        0.0033             nan     0.1000   -0.0000
+    ##     80        0.0032             nan     0.1000   -0.0000
+    ##    100        0.0031             nan     0.1000   -0.0000
+    ##    120        0.0030             nan     0.1000    0.0000
+    ##    140        0.0030             nan     0.1000   -0.0000
+    ##    150        0.0030             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0171             nan     0.1000    0.0023
+    ##      2        0.0150             nan     0.1000    0.0020
+    ##      3        0.0131             nan     0.1000    0.0017
+    ##      4        0.0117             nan     0.1000    0.0012
+    ##      5        0.0104             nan     0.1000    0.0012
+    ##      6        0.0095             nan     0.1000    0.0010
+    ##      7        0.0086             nan     0.1000    0.0009
+    ##      8        0.0079             nan     0.1000    0.0007
+    ##      9        0.0073             nan     0.1000    0.0006
+    ##     10        0.0067             nan     0.1000    0.0005
+    ##     20        0.0041             nan     0.1000    0.0001
+    ##     40        0.0033             nan     0.1000   -0.0000
+    ##     60        0.0031             nan     0.1000   -0.0000
+    ##     80        0.0029             nan     0.1000   -0.0000
+    ##    100        0.0028             nan     0.1000   -0.0000
+    ##    120        0.0027             nan     0.1000   -0.0000
+    ##    140        0.0026             nan     0.1000   -0.0000
+    ##    150        0.0026             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0167             nan     0.1000    0.0025
+    ##      2        0.0146             nan     0.1000    0.0023
+    ##      3        0.0127             nan     0.1000    0.0018
+    ##      4        0.0112             nan     0.1000    0.0013
+    ##      5        0.0099             nan     0.1000    0.0013
+    ##      6        0.0089             nan     0.1000    0.0011
+    ##      7        0.0080             nan     0.1000    0.0008
+    ##      8        0.0072             nan     0.1000    0.0007
+    ##      9        0.0066             nan     0.1000    0.0005
+    ##     10        0.0060             nan     0.1000    0.0005
+    ##     20        0.0037             nan     0.1000    0.0001
+    ##     40        0.0030             nan     0.1000   -0.0000
+    ##     60        0.0028             nan     0.1000   -0.0000
+    ##     80        0.0026             nan     0.1000   -0.0000
+    ##    100        0.0025             nan     0.1000   -0.0000
+    ##    120        0.0024             nan     0.1000   -0.0000
+    ##    140        0.0023             nan     0.1000   -0.0000
+    ##    150        0.0022             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0169             nan     0.1000    0.0019
+    ##      2        0.0151             nan     0.1000    0.0017
+    ##      3        0.0137             nan     0.1000    0.0013
+    ##      4        0.0124             nan     0.1000    0.0011
+    ##      5        0.0114             nan     0.1000    0.0010
+    ##      6        0.0106             nan     0.1000    0.0009
+    ##      7        0.0098             nan     0.1000    0.0007
+    ##      8        0.0092             nan     0.1000    0.0006
+    ##      9        0.0087             nan     0.1000    0.0005
+    ##     10        0.0082             nan     0.1000    0.0004
+    ##     20        0.0051             nan     0.1000    0.0002
+    ##     40        0.0036             nan     0.1000    0.0000
+    ##     60        0.0033             nan     0.1000   -0.0000
+    ##     80        0.0031             nan     0.1000   -0.0000
+    ##    100        0.0031             nan     0.1000   -0.0000
+    ##    120        0.0030             nan     0.1000   -0.0000
+    ##    140        0.0030             nan     0.1000   -0.0000
+    ##    150        0.0029             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0164             nan     0.1000    0.0024
+    ##      2        0.0145             nan     0.1000    0.0019
+    ##      3        0.0128             nan     0.1000    0.0016
+    ##      4        0.0114             nan     0.1000    0.0015
+    ##      5        0.0101             nan     0.1000    0.0010
+    ##      6        0.0091             nan     0.1000    0.0009
+    ##      7        0.0083             nan     0.1000    0.0008
+    ##      8        0.0075             nan     0.1000    0.0007
+    ##      9        0.0070             nan     0.1000    0.0005
+    ##     10        0.0065             nan     0.1000    0.0004
+    ##     20        0.0039             nan     0.1000    0.0001
+    ##     40        0.0031             nan     0.1000   -0.0000
+    ##     60        0.0029             nan     0.1000   -0.0000
+    ##     80        0.0028             nan     0.1000   -0.0000
+    ##    100        0.0027             nan     0.1000   -0.0000
+    ##    120        0.0026             nan     0.1000   -0.0000
+    ##    140        0.0025             nan     0.1000   -0.0000
+    ##    150        0.0025             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0163             nan     0.1000    0.0025
+    ##      2        0.0142             nan     0.1000    0.0019
+    ##      3        0.0124             nan     0.1000    0.0015
+    ##      4        0.0109             nan     0.1000    0.0015
+    ##      5        0.0096             nan     0.1000    0.0012
+    ##      6        0.0086             nan     0.1000    0.0010
+    ##      7        0.0077             nan     0.1000    0.0008
+    ##      8        0.0070             nan     0.1000    0.0007
+    ##      9        0.0064             nan     0.1000    0.0005
+    ##     10        0.0059             nan     0.1000    0.0005
+    ##     20        0.0036             nan     0.1000    0.0001
+    ##     40        0.0029             nan     0.1000   -0.0000
+    ##     60        0.0027             nan     0.1000   -0.0000
+    ##     80        0.0025             nan     0.1000   -0.0000
+    ##    100        0.0023             nan     0.1000   -0.0000
+    ##    120        0.0022             nan     0.1000   -0.0000
+    ##    140        0.0021             nan     0.1000   -0.0000
+    ##    150        0.0021             nan     0.1000   -0.0000
+    ## 
+    ## Iter   TrainDeviance   ValidDeviance   StepSize   Improve
+    ##      1        0.0172             nan     0.1000    0.0025
+    ##      2        0.0153             nan     0.1000    0.0021
+    ##      3        0.0136             nan     0.1000    0.0018
+    ##      4        0.0120             nan     0.1000    0.0013
+    ##      5        0.0107             nan     0.1000    0.0010
+    ##      6        0.0097             nan     0.1000    0.0010
+    ##      7        0.0088             nan     0.1000    0.0007
+    ##      8        0.0081             nan     0.1000    0.0007
+    ##      9        0.0074             nan     0.1000    0.0007
+    ##     10        0.0069             nan     0.1000    0.0005
+    ##     20        0.0042             nan     0.1000    0.0001
+    ##     40        0.0033             nan     0.1000    0.0000
+    ##     50        0.0032             nan     0.1000   -0.0000
+    ## 
+    ##   model shrinkage interaction.depth n.minobsinnode n.trees       RMSE  Rsquared
+    ## 1   gbm       0.1                 1             10      50 0.06665385 0.7829859
+    ## 4   gbm       0.1                 2             10      50 0.06482556 0.7955925
+    ## 7   gbm       0.1                 3             10      50 0.06517752 0.7928972
+    ## 2   gbm       0.1                 1             10     100 0.06518671 0.7940185
+    ## 5   gbm       0.1                 2             10     100 0.06524274 0.7939312
+    ## 8   gbm       0.1                 3             10     100 0.06653831 0.7848649
+    ## 3   gbm       0.1                 1             10     150 0.06516155 0.7944080
+    ## 6   gbm       0.1                 2             10     150 0.06582132 0.7899245
+    ## 9   gbm       0.1                 3             10     150 0.06795537 0.7751322
+    ##          MAE      RMSESD RsquaredSD       MAESD
+    ## 1 0.04794439 0.003603589 0.01602887 0.004424951
+    ## 4 0.04603946 0.001978341 0.01656146 0.002526510
+    ## 7 0.04636901 0.003158840 0.01470531 0.003434924
+    ## 2 0.04603151 0.002826234 0.01246125 0.003510261
+    ## 5 0.04656702 0.002038843 0.01719555 0.002715064
+    ## 8 0.04791021 0.002498076 0.01223897 0.002974066
+    ## 3 0.04618750 0.002639853 0.01083720 0.003469394
+    ## 6 0.04714432 0.002886160 0.01605412 0.003150072
+    ## 9 0.04924773 0.003116576 0.01577626 0.003667420
+
+**Takeaway:** Based on the results, Stochastic Gradient Descent performs
+better than the other two ensemble methods while offering worse results
+than the Multiple Linear Regression. We would consider preferably the
+simple model that is the Multiple Linear Regression based on Occam’s
+razor principles regarding complexity (Further information
+[here](https://math.ucr.edu/home/baez/physics/General/occam.html)). The
+Multiple Linear Regression proves to be more effective across multiple
+than the Stochastic Gradient Descent. However, we should remain
+cognizant that our training set is fairly small and the hyper-parameter
+are all set to default settings. Before giving the final recommendation,
+we will conduct hyper parameter tuning on our best model so far through
+Grid search to find the best parameters.
+
+## 9. Test Data - Model Performance
+
+``` r
+model <- train(target ~ ., data = test,
+               method = 'lm', trControl = fitControl,
+               metric = "RMSE")
+```
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+    ## Warning in predict.lm(modelFit, newdata): prediction from a rank-deficient fit
+    ## may be misleading
+
+``` r
+res <- model$results %>% add_column(model = 'MLR', .before = 1)
+res
+```
+
+    ##   model intercept       RMSE  Rsquared        MAE     RMSESD RsquaredSD
+    ## 1   MLR      TRUE 0.06753676 0.7823306 0.04935842 0.01078635 0.05832936
+    ##         MAESD
+    ## 1 0.006382295
+
+**Takeaway:** Though the results are slighter than the training results,
+the performance is still satisfactory remainig close to 0 as we would
+desire.
