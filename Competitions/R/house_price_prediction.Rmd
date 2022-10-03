@@ -12,59 +12,59 @@ Different variables come into play in appraising a house, such as the number of 
 
 ## **Table of Contents**
 
-1.  Environment set-up
+1\. Environment set-up
 
-    -   Importing Libraries
+\* Importing Libraries
 
-    -   Loading the data
+\* Loading the data
 
-2.  Initial Diagnostics
+2\. Initial Diagnostics
 
-    -   Glimpse
+\* Glimpse
 
-    -   Descriptive Statitics
+\* Descriptive Statistics
 
-    -   Target Variable Analysis
+\* Target Variable Analysis
 
-    -   Predictors Analysis
+\* Predictors Analysis
 
-3.  Data Cleaning
+3\. Data Processing
 
-    -   Missing Values
+\* Basic cleanup
 
-    -   Outliers
+\* Missing Values - Imputation
 
-    -   Duplicate Observations
+\* Outliers Detection
 
-4.  Correlation Analysis
+4\. Inquiry Exploration
 
-    -   Correlation Matrix
+\* Does bigger means pricier houses?
 
-    -   Strongest relationship
+\* Where is the real estate hotspot?
 
-5.  Inquiry Exploration
+\* Which miscellaneous feature add the most value?
 
-6.  Feature Engineering
+5\. Feature Engineering
 
-7.  Machine Learning set-up
+\* Outliers - Feature Scaling
 
-    -   Train-test split
+\* Categorical Encoding
 
-    -   Cross-validation
+\* Datetime Variables
 
-8.  Feature Selection
+6\. Correlation Analysis
 
-9.  Dimensionality Reduction
+7\. Machine Learning set-up
 
-10. Machine Learning - Simple Models
+8\. Machine Learning - Model Building
 
-11. Machine Learning - Ensemble Methods
+\* Simple Models
 
-12. Hyperparameter Tuning
+\* Ensemble Methods
 
-13. Model Performance Evaluation
+9\. Hyper-parameter Tuning
 
-14. Recommendation & Conclusion
+10\. Final Submission
 
 ## **1. Environment Set-up**
 
@@ -131,9 +131,7 @@ df %>%
 
 **Takeaway:** From the histogram above, we can deduct that house sale prices in this dataset have a right-skewed distribution with outliers on the upper end, indicating luxury houses with higher price points. However, most houses appear to fall between \~USD100k and \~USD300k, relatively consistent with real estate markets in the United States.
 
-## 
-
-3.  Data Cleaning
+## 3. Data Processing
 
 ```{r}
 missvalues_visual <- 
