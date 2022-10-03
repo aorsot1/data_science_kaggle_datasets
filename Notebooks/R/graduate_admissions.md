@@ -555,10 +555,10 @@ better reliability when thinking about scaling.
 This section will extend our work in machine learning to incorporate
 ensemble methods. We generated simple models and compared the scores,
 which appear satisfactory, with the lowest cross validated RMSE at 0.06.
-In ourdesire greater performance and stability in our predictive
-algorithm, ensemble methods would prove more effective. Most often, they
-act as a ‘superposer’ of multiple models throughout various ways and
-thus, bolster their predictive power. Further Information
+Per our objective for greater performance and stability in our
+predictive algorithm, ensemble methods would prove more effective. Most
+often, they act as a ‘superposer’ of multiple models throughout various
+ways and thus, bolster their predictive power. Further Information
 [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
 
 ``` r
@@ -953,5 +953,5 @@ res
     ## 1 0.006382295
 
 **Takeaway:** Though the results are slighter than the training results,
-the performance is still satisfactory remainig close to 0 as we would
+the performance is still satisfactory remaining close to 0 as we would
 desire.

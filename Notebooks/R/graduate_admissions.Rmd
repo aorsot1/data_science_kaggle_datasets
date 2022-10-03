@@ -360,7 +360,7 @@ model_comparison(lin_models, train, fitControl)
 
 ## 8. Ensemble Methods - CV
 
-This section will extend our work in machine learning to incorporate ensemble methods. We generated simple models and compared the scores, which appear satisfactory, with the lowest cross validated RMSE at 0.06. In ourdesire greater performance and stability in our predictive algorithm, ensemble methods would prove more effective. Most often, they act as a 'superposer' of multiple models throughout various ways and thus, bolster their predictive power. Further Information [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
+This section will extend our work in machine learning to incorporate ensemble methods. We generated simple models and compared the scores, which appear satisfactory, with the lowest cross validated RMSE at 0.06. Per our objective for greater performance and stability in our predictive algorithm, ensemble methods would prove more effective. Most often, they act as a 'superposer' of multiple models throughout various ways and thus, bolster their predictive power. Further Information [here](https://machinelearningmastery.com/tour-of-ensemble-learning-algorithms/).
 
 ```{r}
 models_ensemble <- c('rf', 'gbm')
@@ -379,5 +379,4 @@ res <- model$results %>% add_column(model = 'MLR', .before = 1)
 res
 ```
 
-**Takeaway:** Though the results are slighter than the training results, the performance is still satisfactory remainig close to 0 as we would desire.
-
+**Takeaway:** Though the results are slighter than the training results, the performance is still satisfactory remaining close to 0 as we would desire.
