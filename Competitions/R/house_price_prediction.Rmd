@@ -50,9 +50,8 @@ Different variables come into play in appraising a house, such as the number of 
 
 -   Categorical Encoding
 
-```{=html}
 <!-- -->
-```
+
 -   Outliers - Feature Scaling
 
 6\. Correlation Analysis
@@ -200,42 +199,39 @@ for (i in unique(df$LotShape))
 
 -   We observe a notable difference in houses categorized as IR3 (very irregular shape) thus, the imputation on ***LotFrontage*** will be done using median value grouped by ***LotShape*** to ensure consistency in the data.
 
--   For the other columns with missing information, the missing values refers the abscence of certain ameneties in agiven home. So, we will replace those with a seperate category as "No X Amenity"
+-   For the other columns with missing information, the missing values refers the absence of certain amenities in a given home. So, we will replace those with a separate category as "No X Amenity"
 
--   Such as in the instance of "Eletrical", we will just delete the observation(s) with the non-menaningful null values.
-
-```{}
-```
+-   Such as in the instance of "Electrical", we will just delete the observation(s) with the non-meaningful null values.
 
 ```{r}
 missing_val_fix <-function(data, rep_set_1, rep_set_others){
   # Deleting the Electrical 
-  data <- drop_na(data, any_of("Electrical"))
-  data <- data %>% 
-    group_by(LotShape) %>% 
-    mutate(LotFrontage = ifelse(is.na(LotFrontage), 
-                              median(LotFrontage, na.rm = TRUE), 
-                              LotFrontage))
+  #data <- drop_na(data, any_of("Electrical"))
+  # data <- data %>% 
+  #   group_by(LotShape) %>% 
+  #   mutate(LotFrontage = ifelse(is.na(LotFrontage), 
+  #                             median(LotFrontage, na.rm = TRUE), 
+  #                             LotFrontage))
 
   # Grouping of variables dependent on the presence of other amenities
-  data <- data %>% replace_na(rep_1)
-  for (i in rep_set_others) {
-    
+  #data <- data %>% replace_na(rep_set_1)
+  
+  for (name in names(rep_set_others)) {
+    change_val <- rep_set_others[[name]][1]
+    cols <- as.vector(rep_set_others[[name]][-1])
+    #print(cols)
+    # data <- data %>% mutate_at(vars(cols), ~replace_na(., change_val))
+    data <- data %>% mutate(across(cols, ~replace_na(., change_val)))
   }
-  data <- data %>% 
-              mutate_at(rep_2, ~replace_na(., rep_2_val)) %>% 
-              mutate_at(rep_3, ~replace_na(., rep_3_val)) %>% 
-              mutate_at(rep_4, ~replace_na(., rep_4_val)) %>% 
-              mutate_at(rep_5, ~replace_na(., rep_5_val))
   
-  ## No. of null values
-  null_vals <- df %>% is.na() %>% sum()
+  # ## No. of null values
+  # null_vals <- data %>% is.na() %>% sum()
+  # 
+  # # Reporting back
+  # sprintf(fmt="Afer imputation, we have missing %d values in our data.",
+  #         null_vals) %>% cat()
   
-  # Reporting back
-  sprintf(fmt="Afer imputation, we have missing %d values in our data.",
-          null_vals) %>% cat()
-  
-  return(data)
+  #return(data)
   
 }
 ```
@@ -245,26 +241,24 @@ rep_set_1 <- list('Alley'='No Alley', 'FireplaceQu'='No Fireplace',
             'PoolQC'='No Pool', 'Fence'='No Fence','MiscFeature'='No Misc')
 
 rep_set_others <- list(
-  set_2 <- list("Unknown"=c('MSZoning', 'Utilities', 'Exterior1st', 
-        'Exterior2nd', 'MasVnrType', 'KitchenQual',
-        'Functional', 'SaleType')),
+  "set_2" = c("Unknown", 'MSZoning', 'Utilities', 'Exterior1st', 
+              'Exterior2nd', 'MasVnrType', 'KitchenQual',
+              'Functional', 'SaleType'),
   
-  set_3 <-list("No Basement"=c('BsmtQual', 'BsmtCond', 'BsmtExposure', 
-        'BsmtFinType1', 'BsmtFinType2')),
+  "set_3" = c("No Basement", 'BsmtQual', 'BsmtCond', 
+              'BsmtExposure', 'BsmtFinType1', 'BsmtFinType2'),
   
-  set_4 <-list("No Garage"=c( 'GarageType', 'GarageFinish', 'GarageQual',
-        'GarageCond')),
+  "set_4" = c("No Garage", 'GarageType', 'GarageFinish', 
+              'GarageQual', 'GarageCond'),
   
-  set_5 <-list(0 = c(  'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 
-            'BsmtUnfSF', 'TotalBsmtSF', 'BsmtFullBath', 
-            'BsmtHalfBath', 'GarageCars', 'GarageYrBlt',
-            'GarageArea'))
+  "set_5" = c(0, 'MasVnrArea', 'BsmtFinSF1', 'BsmtFinSF2', 
+              'BsmtUnfSF', 'TotalBsmtSF', 'BsmtFullBath', 
+              'BsmtHalfBath', 'GarageCars', 'GarageYrBlt',
+              'GarageArea')
 )
 
-for (name in names(rep_set_others)) {
-  print(name)
-  print(rep_set_others[[name]])
-}
+
+#missing_val_fix(df, rep_set_1, rep_set_others)
 ```
 
 4.  -Inquiry Exploration
